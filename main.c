@@ -35,7 +35,7 @@ void logTransaction(const char *message) {
     fclose(transactionLog);
 }
 
-// verifyAccount function for delete(requireID), deposit, withdraw and remittance
+// verifyAccount function for delete(requireID), deposit, withdraw and remittance(account to be transferred, no ID or PIN required)
 int verifyAccount(int requireID, int *returnAccountNumber) {
     int running = 1;
     while (running) {
@@ -374,12 +374,8 @@ void deleteAccount() {
 }
 
 
-// --- 3. Deposit ---
-void deposit() {
-    int accountNumber;
-
-    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
-    
+// --- 3/4. Deposit / Withdraw ---
+void updateBalance(char operation,int amount, int accountNumber) {
     char filename[128];
     sprintf(filename, "database/%d.txt", accountNumber);
 
@@ -397,10 +393,20 @@ void deposit() {
     fscanf(accFile, "PIN: %4s\n", acc.pin);
     fscanf(accFile, "Balance: %f\n", &acc.balance);
 
-    int amount;
-    printf("How much would you like to deposit? ");
-    scanf("%d", &amount);
-    acc.balance += amount;
+    if (operation == '+') {
+        acc.balance += amount;
+        printf("Deposit successful. ");
+    } else if (operation == '-') {
+        if (amount <= acc.balance) {
+            acc.balance -= amount;
+            printf("Withdrawal/Transfer successful. ");
+        } else {
+            printf("Insufficient balance in your account.\n");
+            fclose(accFile);
+            return;
+        }
+    }
+
 
     // Go back to start of file and rewrite
     fseek(accFile, 0, SEEK_SET);
@@ -413,7 +419,48 @@ void deposit() {
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
     fclose(accFile);
 
-    printf("Deposit successful. New balance: %.2f\n", acc.balance);
+    printf("New balance: %.2f\n", acc.balance);
+}
+
+
+// --- 3,4,5. Deposit, Withdraw, Remittance (using updateBalance) ---
+void deposit() {
+    int accountNumber;
+    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+
+    int amount;
+    printf("How much would you like to deposit? ");
+    scanf("%d", &amount);
+    updateBalance('+', amount, accountNumber);
+}
+
+void withdraw() {
+    int accountNumber;
+    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    
+    int amount;
+    printf("How much would you like to withdraw? ");
+    scanf("%d", &amount);
+    updateBalance('-', amount, accountNumber);
+}
+
+void remittance() {
+    int senderAccount;
+    if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
+
+    int receiverAccount;
+    printf("Enter recipient account number: ");
+    scanf("%d", &receiverAccount);
+    if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
+
+    int amount;
+    printf("How much would you like to transfer? ");
+    scanf("%d", &amount);
+
+    updateBalance('-', amount, senderAccount);
+    updateBalance('+', amount, receiverAccount);
+
+    printf("Transfer Succesful!!");
 }
 
 int main() {
@@ -454,9 +501,11 @@ int main() {
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
             printf("Withdrawing...\n");
+            withdraw();
             logTransaction("withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
             printf("Remitting funds...");
+            remittance();
             logTransaction("remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
             printf("Thank you, goodbye. Exiting...!\n");
