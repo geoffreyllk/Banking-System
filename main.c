@@ -27,8 +27,102 @@ void logTransaction(const char *message) {
     transactionLog = fopen("database/transaction.log", "a");
     if (transactionLog == NULL) return;
     time_t t = time(NULL);
-    fprintf(transactionLog, "[%s] %s\n", ctime(&t), message);
+
+    char *timeStr = ctime(&t);
+    timeStr[strcspn(timeStr, "\n")] = 0; // remove newline
+
+    fprintf(transactionLog, "[%s] %s\n", timeStr, message);
     fclose(transactionLog);
+}
+
+// verifyAccount function for delete(requireID), deposit, withdraw and remittance
+int verifyAccount(int requireID, int *returnAccountNumber) {
+    int running = 1;
+    while (running) {
+        int accNumInput;
+        char pinInput[5];
+        char idInput[5];
+
+        int accountFound = 1;
+        // verify account number
+        while (accountFound) {
+            printf("Enter your account number: ");
+            scanf("%d", &accNumInput);
+
+            if (!isAccountNumberInIndex(accNumInput)) {
+                printf("Account number not found. Please try again.\n");
+            } else {
+                accountFound = 0;
+            }
+        }
+
+        // get data of account number inputted from file to compare
+        char filename[128];
+        sprintf(filename, "database/%d.txt", accNumInput);
+
+        FILE *accFile;
+        accFile = fopen(filename, "r");
+        if (!accFile) {
+            printf("Account not found.\n");
+            return 0;
+        }
+
+        char storedName[100], storedPIN[5], storedID[5], typeStr[20];
+        int storedAccNum;
+        float balance;
+
+        fscanf(accFile, "Name: %[^\n]\n", storedName);
+        fscanf(accFile, "Account Number: %d\n", &storedAccNum);
+        fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
+        fscanf(accFile, "PIN: %4s\n", storedPIN);
+        fscanf(accFile, "Balance: %f\n", &balance);
+        fscanf(accFile, "ID: %12s\n", storedID);
+
+        fclose(accFile);
+
+        if (requireID) {
+            int idFound = 1;
+            char last4IDs[5];
+
+            // copy last 4 characters of stored ID
+            int len = strlen(storedID);
+            strncpy(last4IDs, storedID + len - 4, 4);
+            last4IDs[4] = '\0';
+            // verify id (compare idInput with last 4 char of ID)
+            while (idFound) {
+                printf("Enter last 4 characters of your ID: ");
+                scanf(" %4s", idInput);
+
+                if (strcmp(idInput, last4IDs) != 0) {
+                    printf("Incorrect ID. Try again.\n");
+                } else {
+                    idFound = 0;
+                }
+            }
+        }
+
+        // verify pin with 4 attempts
+        int attemptsLeft = 4;
+        int pinCorrect = 0;
+        while (attemptsLeft > 0) {
+            printf("Enter your 4-digit PIN (Attempts left: %d): ", attemptsLeft);
+            scanf(" %4s", pinInput);
+
+            if (strcmp(pinInput, storedPIN) == 0) {
+                *returnAccountNumber = accNumInput; // if correct, return account number for use
+                return 1;
+            } else {
+                attemptsLeft--;
+                if (attemptsLeft == 0) {
+                    printf("You have run out of attempts. Returning to main menu.\n");
+                    return 0;
+                } else {
+                    printf("Incorrect PIN. ");
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 // --- 1. create functions ---
@@ -217,137 +311,67 @@ void deleteAccount() {
     // print all account numbers in database
     getAccounts();
 
-    int running = 1;
-    while (running) {
-        int accNumInput;
-        char pinInput[5];
-        char idInput[5];
+    int accountNumber;
+    if (!verifyAccount(1, &accountNumber)) return; // if pin is wrong, return
 
-        int accountFound = 1;
-        // verify account number
-        while (accountFound) {
-            printf("Enter your account number: ");
-            scanf("%d", &accNumInput);
+    // confirm deletion
+    if (verifyAccount(1, &accountNumber)) {
+        char confirm[10];
+        printf("Are you sure you want to delete your account? (y/n): ");
+        scanf(" %s", confirm);
 
-            if (!isAccountNumberInIndex(accNumInput)) {
-                printf("Account number not found. Please try again.\n");
-            } else {
-                accountFound = 0;
+        if (strcmp(confirm, "y") == 0 || strcmp(confirm, "Y") == 0) {
+            char filename[128];
+            sprintf(filename, "database/%d.txt", accountNumber);
+
+            FILE *accFile;
+            accFile = fopen(filename, "r");
+            if (!accFile) {
+                printf("Account not found.\n");
+                return 0;
             }
-        }
 
-        // get data of account number inputted from file to compare
-        char filename[128];
-        sprintf(filename, "database/%d.txt", accNumInput);
+            if (remove(filename) == 0) {
 
-        FILE *accFile = fopen(filename, "r");
-        if (!accFile) {
-            printf("Account not found.\n");
-            return;
-        }
-
-        char storedName[100], storedPIN[5], storedID[5], typeStr[20];
-        int storedAccNum;
-        float balance;
-
-        fscanf(accFile, "Name: %[^\n]\n", storedName);
-        fscanf(accFile, "Account Number: %d\n", &storedAccNum);
-        fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
-        fscanf(accFile, "PIN: %4s\n", storedPIN);
-        fscanf(accFile, "Balance: %f\n", &balance);
-        fscanf(accFile, "ID: %4s\n", storedID);
-
-        fclose(accFile);
-
-        int idFound = 1;
-        char last4IDs[5];
-
-        // copy last 4 characters of stored ID
-        int len = strlen(storedID);
-        strncpy(last4IDs, storedID + len - 4, 4);
-        last4IDs[4] = '\0';
-        // verify id (compare idInput with last 4 char of ID)
-        while (idFound) {
-            printf("Enter last 4 characters of your ID: ");
-            scanf(" %4s", idInput);
-
-            if (strcmp(idInput, last4IDs) != 0) {
-                printf("Incorrect ID. Try again.\n");
-            } else {
-                idFound = 0;
-            }
-        }
-
-        // verify pin with 4 attempts
-        int attemptsLeft = 4;
-        int pinCorrect = 0;
-        while (attemptsLeft > 0) {
-            printf("Enter your 4-digit PIN (Attempts left: %d): ", attemptsLeft);
-            scanf(" %4s", pinInput);
-
-            if (strcmp(pinInput, storedPIN) == 0) {
-                pinCorrect = 1;
-                break;
-            } else {
-                attemptsLeft--;
-                if (attemptsLeft == 0) {
-                    printf("You have run out of attempts. Returning to main menu.\n");
-                    return;
-                } else {
-                    printf("Incorrect PIN. ");
-                }
-            }
-        }
-
-        // confirm deletion
-        if (pinCorrect) {
-            char confirm[10];
-            printf("Are you sure you want to delete your account? (y/n): ");
-            scanf(" %s", confirm);
-
-            if (strcmp(confirm, "y") == 0 || strcmp(confirm, "Y") == 0) {
-                if (remove(filename) == 0) {
-
-                    // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
-                    FILE *indexRead = fopen("database/index.txt", "r");
-                    FILE *indexTemp = fopen("database/temp_index.txt", "w");
-                    // error check
-                    if (!indexRead || !indexTemp) {
-                        printf("Error updating index file.\n");
-                        return;
-                    }
-
-                    int number;
-                    while (fscanf(indexRead, "%d", &number) == 1) {
-                        // if NOT the account number to be deleted
-                        if (number != accNumInput) {
-                            // write to temporary file
-                            fprintf(indexTemp, "%d\n", number);
-                        }
-                    }
-
-                    fclose(indexRead);
-                    fclose(indexTemp);
-
-                    // remove current index.txt and replace with temp file with all accounts except the file to be deleted
-                    remove("database/index.txt");
-                    rename("database/temp_index.txt", "database/index.txt");
-                    
-                    printf("Account deleted successfully.\n");
-                    return; 
-                } else {
-                    printf("Error deleting account.\n");
+                // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
+                FILE *indexRead = fopen("database/index.txt", "r");
+                FILE *indexTemp = fopen("database/temp_index.txt", "w");
+                // error check
+                if (!indexRead || !indexTemp) {
+                    printf("Error updating index file.\n");
                     return;
                 }
+
+                int number;
+                while (fscanf(indexRead, "%d", &number) == 1) {
+                    // if NOT the account number to be deleted
+                    if (number != accountNumber) {
+                        // write to temporary file
+                        fprintf(indexTemp, "%d\n", number);
+                    }
+                }
+
+                fclose(indexRead);
+                fclose(indexTemp);
+
+                // remove current index.txt and replace with temp file with all accounts except the file to be deleted
+                remove("database/index.txt");
+                rename("database/temp_index.txt", "database/index.txt");
+                
+                printf("Account deleted successfully.\n");
+                fclose(accFile);
+                return; 
             } else {
-                printf("Account deletion canceled.\n");
+                printf("Error deleting account.\n");
+                fclose(accFile);
                 return;
             }
+        } else {
+            printf("Account deletion canceled.\n");
+            return;
         }
-
     }
 }
-
 
 
 
