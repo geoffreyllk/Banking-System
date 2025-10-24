@@ -13,7 +13,7 @@ struct Account {
     char name[100];
     char ID[13];
     int accountNumber;
-    int type; // 0 = savings, 1 = current
+    char type[10];
     char pin[5];
     float balance;
 };
@@ -187,13 +187,15 @@ void createAccount() {
     int running = 1;
     // validate 0 or 1 for account type
     while (running) {
+        char typeInput[10];
         printf("Account type (0 = savings, 1 = current): ");
-        if (scanf("%d", &acc.type) != 1) { // check if input is a number
-            printf("Invalid input. Please enter 0 or 1.\n");
-            while (getchar() != '\n'); // clear input buffer
-            continue;
-        }
-        if (acc.type == 0 || acc.type == 1) {
+        scanf("%9s", typeInput);
+
+        if (strcmp(typeInput, "0") == 0) {
+            strcpy(acc.type, "Savings");
+            break;
+        } else if (strcmp(typeInput, "1") == 0) {
+            strcpy(acc.type, "Current");
             break;
         } else {
             printf("Invalid type. Please enter 0 or 1 only.\n");
@@ -257,11 +259,7 @@ void createAccount() {
     fprintf(accFile, "Name: %s\n", acc.name);
     fprintf(accFile, "ID: %s\n", acc.ID);
     fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
-    if (acc.type == 0) {
-        fprintf(accFile, "Account Type: Savings\n");
-    } else {
-        fprintf(accFile, "Account Type: Current\n");
-    }
+    fprintf(accFile, "Account Type: %s\n", acc.type);
     fprintf(accFile, "PIN: %s\n", acc.pin);
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
 
@@ -476,10 +474,14 @@ void remittance() {
 
     // get receiver type
     char filename[128];
-    char receiverType[20];
+    char receiverType[10];
     sprintf(filename, "database/%d.txt", receiverAccount);
     FILE *file; 
     file = fopen(filename, "r");
+    if (!file) {
+        printf("Recipient account file not found.\n");
+        return;
+    }
     fscanf(file, "Name: %[^\n]\n", acc.name);
     fscanf(file, "ID: %s\n", acc.ID);
     fscanf(file, "Account Number: %d\n", &acc.accountNumber);
@@ -496,7 +498,7 @@ int main() {
     time_t t = time(NULL);
     printf("--- Banking Sytem ---\n");
     printf("Session start: %s\n", ctime(&t));
-    printf("Loaded Accounts: %d\n\n", 0);
+    printf("No. Accounts Loaded: %d\n\n", 0);
 
     char choice[20];
 
