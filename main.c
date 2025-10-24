@@ -67,7 +67,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             return 0;
         }
 
-        char storedName[100], storedPIN[5], storedID[5], typeStr[20];
+        char storedName[100], storedPIN[5], storedID[13], typeStr[20];
         int storedAccNum;
         float balance;
 
@@ -375,7 +375,7 @@ void deleteAccount() {
 
 
 // --- 3/4. Deposit / Withdraw ---
-void updateBalance(char operation,int amount, int accountNumber) {
+void updateBalance(char operation,int amount, int accountNumber, const char *receiverType) {
     char filename[128];
     sprintf(filename, "database/%d.txt", accountNumber);
 
@@ -393,6 +393,7 @@ void updateBalance(char operation,int amount, int accountNumber) {
     fscanf(accFile, "PIN: %4s\n", acc.pin);
     fscanf(accFile, "Balance: %f\n", &acc.balance);
 
+    float fee = 0.0;
     if (operation == '+') {
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
@@ -403,16 +404,26 @@ void updateBalance(char operation,int amount, int accountNumber) {
             return;
         }
     } else if (operation == '-') {
-        if (amount <= acc.balance) {
-            acc.balance -= amount;
-            printf("Withdrawal/Transfer successful. ");
-        } else {
-            printf("Insufficient balance in your account.\n");
+        if (receiverType != NULL) {
+            if (strcmp(acc.type, "Savings") == 0 && strcmp(receiverType, "Current") == 0) {
+                fee = 0.02; // 2% fee
+            } else if (strcmp(acc.type, "Current") == 0 && strcmp(receiverType, "Savings") == 0) {
+                fee = 0.03; // 3% fee
+            }
+        }
+        float totalAmount = amount + (amount * fee);
+        if (totalAmount > acc.balance) {
+            printf("Insufficient balance including remittance fee.\n");
             fclose(accFile);
             return;
         }
-    }
 
+        acc.balance -= totalAmount;
+        if (fee > 0) {
+            printf("A remittance fee of %.2f%% has been applied.\n", fee * 100);
+        }
+        printf("Withdrawal/Transfer successful. ");
+    }
 
     // Go back to start of file and rewrite
     fseek(accFile, 0, SEEK_SET);
@@ -437,7 +448,7 @@ void deposit() {
     int amount;
     printf("How much would you like to deposit? ");
     scanf("%d", &amount);
-    updateBalance('+', amount, accountNumber);
+    updateBalance('+', amount, accountNumber, NULL);
 }
 
 void withdraw() {
@@ -447,7 +458,7 @@ void withdraw() {
     int amount;
     printf("How much would you like to withdraw? ");
     scanf("%d", &amount);
-    updateBalance('-', amount, accountNumber);
+    updateBalance('-', amount, accountNumber, NULL);
 }
 
 void remittance() {
@@ -463,8 +474,20 @@ void remittance() {
     printf("How much would you like to transfer? ");
     scanf("%d", &amount);
 
-    updateBalance('-', amount, senderAccount);
-    updateBalance('+', amount, receiverAccount);
+    // get receiver type
+    char filename[128];
+    char receiverType[20];
+    sprintf(filename, "database/%d.txt", receiverAccount);
+    FILE *file; 
+    file = fopen(filename, "r");
+    fscanf(file, "Name: %[^\n]\n", acc.name);
+    fscanf(file, "ID: %s\n", acc.ID);
+    fscanf(file, "Account Number: %d\n", &acc.accountNumber);
+    fscanf(file, "Account Type: %[^\n]\n", receiverType);
+    fclose(file);
+
+    updateBalance('-', amount, senderAccount, receiverType);
+    updateBalance('+', amount, receiverAccount, NULL);
 
     printf("Transfer Succesful!!");
 }
