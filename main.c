@@ -20,6 +20,19 @@ struct Account {
 
 struct Account acc;
 
+int countAccounts() {
+    FILE *indexFile = fopen("database/index.txt", "r");
+    if (!indexFile) return 0;
+
+    int count = 0, number;
+    while (fscanf(indexFile, "%d", &number) == 1) {
+        count++;
+    }
+
+    fclose(indexFile);
+    return count;
+}
+
 // log transactions
 void logTransaction(const char *message) {
     FILE *transactionLog;
@@ -125,7 +138,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
     return 0;
 }
 
-// --- 1. create functions ---
+// --- 1. create account functions ---
 
 // check if an account number is already taken
 int isAccountNumberUnique(int accountNumber) {
@@ -310,7 +323,6 @@ void deleteAccount() {
     getAccounts();
 
     int accountNumber;
-    if (!verifyAccount(1, &accountNumber)) return; // if pin is wrong, return
 
     // confirm deletion
     if (verifyAccount(1, &accountNumber)) {
@@ -498,7 +510,7 @@ int main() {
     time_t t = time(NULL);
     printf("--- Banking Sytem ---\n");
     printf("Session start: %s\n", ctime(&t));
-    printf("No. Accounts Loaded: %d\n\n", 0);
+    printf("No. Accounts Loaded: %d\n\n", countAccounts());
 
     char choice[20];
 
