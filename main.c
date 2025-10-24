@@ -11,6 +11,7 @@
 // Bank account structure
 struct Account {
     char name[100];
+    char ID[13];
     int accountNumber;
     int type; // 0 = savings, 1 = current
     char pin[5];
@@ -68,6 +69,26 @@ void createAccount() {
     printf("Please fill in the following: \n");
     printf("Full Name: ");
     scanf(" %[^\n]", acc.name);
+
+    int valid = 0;
+    // check if ID inputted is less than 13 char & is integers
+    while (!valid) {
+        printf("Identification Number (ID): ");
+        scanf(" %12[^\n]", acc.ID);
+
+        valid = 1;
+        for (int i = 0; i < strlen(acc.ID); i++) {
+            if (!isdigit(acc.ID[i])) {
+                valid = 0;
+                printf("Invalid ID. Only numbers allowed.\n");
+                break;
+            }
+        }
+        if (valid && (strlen(acc.ID) < 8 || strlen(acc.ID) > 12)) {
+            valid = 0;
+            printf("Invalid ID length. Must be 8-12 digits.\n");
+        }
+    }
 
     int running = 1;
     // validate 0 or 1 for account type
@@ -140,6 +161,7 @@ void createAccount() {
 
     // write account info to file
     fprintf(accFile, "Name: %s\n", acc.name);
+    fprintf(accFile, "ID: %s\n", acc.ID);
     fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
     if (acc.type == 0) {
         fprintf(accFile, "Account Type: Savings\n");
@@ -152,6 +174,178 @@ void createAccount() {
     fclose(accFile);
 
     printf("\nAccount created successfully!\n");
+}
+
+
+// --- 2. delete functions ---
+void getAccounts() {
+    FILE *indexFile;
+    indexFile = fopen("database/index.txt", "r");
+    if (indexFile == NULL) {
+        printf("Error: couldn’t open index file to retrieve account numbers.\n");
+        return;
+    }
+    char line[128];
+    printf("Saved Accounts:\n");
+    while (fgets(line, sizeof(line), indexFile) != NULL) {
+        printf("- %s", line);
+    }
+    fclose(indexFile);
+}
+
+int isAccountNumberInIndex(int accNum) {
+    FILE *indexFile = fopen("database/index.txt", "r");
+    if (!indexFile) {
+        printf("Error: couldn’t open index file.\n");
+        return 0;
+    }
+
+    int number;
+    int found = 0;
+    while (fscanf(indexFile, "%d", &number) == 1) {
+        if (number == accNum) {
+            found = 1;
+            break;
+        }
+    }
+
+    fclose(indexFile);
+    return found;
+}
+
+void deleteAccount() {
+    // print all account numbers in database
+    getAccounts();
+
+    int running = 1;
+    while (running) {
+        int accNumInput;
+        char pinInput[5];
+        char idInput[5];
+
+        int accountFound = 1;
+        // verify account number
+        while (accountFound) {
+            printf("Enter your account number: ");
+            scanf("%d", &accNumInput);
+
+            if (!isAccountNumberInIndex(accNumInput)) {
+                printf("Account number not found. Please try again.\n");
+            } else {
+                accountFound = 0;
+            }
+        }
+
+        // get data of account number inputted from file to compare
+        char filename[128];
+        sprintf(filename, "database/%d.txt", accNumInput);
+
+        FILE *accFile = fopen(filename, "r");
+        if (!accFile) {
+            printf("Account not found.\n");
+            return;
+        }
+
+        char storedName[100], storedPIN[5], storedID[5], typeStr[20];
+        int storedAccNum;
+        float balance;
+
+        fscanf(accFile, "Name: %[^\n]\n", storedName);
+        fscanf(accFile, "Account Number: %d\n", &storedAccNum);
+        fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
+        fscanf(accFile, "PIN: %4s\n", storedPIN);
+        fscanf(accFile, "Balance: %f\n", &balance);
+        fscanf(accFile, "ID: %4s\n", storedID);
+
+        fclose(accFile);
+
+        int idFound = 1;
+        char last4IDs[5];
+
+        // copy last 4 characters of stored ID
+        int len = strlen(storedID);
+        strncpy(last4IDs, storedID + len - 4, 4);
+        last4IDs[4] = '\0';
+        // verify id (compare idInput with last 4 char of ID)
+        while (idFound) {
+            printf("Enter last 4 characters of your ID: ");
+            scanf(" %4s", idInput);
+
+            if (strcmp(idInput, last4IDs) != 0) {
+                printf("Incorrect ID. Try again.\n");
+            } else {
+                idFound = 0;
+            }
+        }
+
+        // verify pin with 4 attempts
+        int attemptsLeft = 4;
+        int pinCorrect = 0;
+        while (attemptsLeft > 0) {
+            printf("Enter your 4-digit PIN (Attempts left: %d): ", attemptsLeft);
+            scanf(" %4s", pinInput);
+
+            if (strcmp(pinInput, storedPIN) == 0) {
+                pinCorrect = 1;
+                break;
+            } else {
+                attemptsLeft--;
+                if (attemptsLeft == 0) {
+                    printf("You have run out of attempts. Returning to main menu.\n");
+                    return;
+                } else {
+                    printf("Incorrect PIN. ");
+                }
+            }
+        }
+
+        // confirm deletion
+        if (pinCorrect) {
+            char confirm[10];
+            printf("Are you sure you want to delete your account? (y/n): ");
+            scanf(" %s", confirm);
+
+            if (strcmp(confirm, "y") == 0 || strcmp(confirm, "Y") == 0) {
+                if (remove(filename) == 0) {
+
+                    // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
+                    FILE *indexRead = fopen("database/index.txt", "r");
+                    FILE *indexTemp = fopen("database/temp_index.txt", "w");
+                    // error check
+                    if (!indexRead || !indexTemp) {
+                        printf("Error updating index file.\n");
+                        return;
+                    }
+
+                    int number;
+                    while (fscanf(indexRead, "%d", &number) == 1) {
+                        // if NOT the account number to be deleted
+                        if (number != accNumInput) {
+                            // write to temporary file
+                            fprintf(indexTemp, "%d\n", number);
+                        }
+                    }
+
+                    fclose(indexRead);
+                    fclose(indexTemp);
+
+                    // remove current index.txt and replace with temp file with all accounts except the file to be deleted
+                    remove("database/index.txt");
+                    rename("database/temp_index.txt", "database/index.txt");
+                    
+                    printf("Account deleted successfully.\n");
+                    return; 
+                } else {
+                    printf("Error deleting account.\n");
+                    return;
+                }
+            } else {
+                printf("Account deletion canceled.\n");
+                return;
+            }
+        }
+
+    }
 }
 
 
@@ -185,6 +379,7 @@ int main() {
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
             printf("Deleting account...\n");
+            deleteAccount();
             logTransaction("delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
