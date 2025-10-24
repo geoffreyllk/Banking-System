@@ -374,6 +374,47 @@ void deleteAccount() {
 }
 
 
+// --- 3. Deposit ---
+void deposit() {
+    int accountNumber;
+
+    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    
+    char filename[128];
+    sprintf(filename, "database/%d.txt", accountNumber);
+
+    FILE *accFile = fopen(filename, "r+"); // read and write to file
+    if (!accFile) {
+        printf("Account not found.\n");
+        return;
+    }
+
+    // read file
+    fscanf(accFile, "Name: %[^\n]\n", acc.name);
+    fscanf(accFile, "ID: %12s\n", acc.ID);
+    fscanf(accFile, "Account Number: %d\n", &acc.accountNumber);
+    fscanf(accFile, "Account Type: %[^\n]\n", acc.type);
+    fscanf(accFile, "PIN: %4s\n", acc.pin);
+    fscanf(accFile, "Balance: %f\n", &acc.balance);
+
+    int amount;
+    printf("How much would you like to deposit? ");
+    scanf("%d", &amount);
+    acc.balance += amount;
+
+    // Go back to start of file and rewrite
+    fseek(accFile, 0, SEEK_SET);
+    // write to file
+    fprintf(accFile, "Name: %s\n", acc.name);
+    fprintf(accFile, "ID: %s\n", acc.ID);
+    fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
+    fprintf(accFile, "Account Type: %s\n", acc.type);
+    fprintf(accFile, "PIN: %s\n", acc.pin);
+    fprintf(accFile, "Balance: %.2f\n", acc.balance);
+    fclose(accFile);
+
+    printf("Deposit successful. New balance: %.2f\n", acc.balance);
+}
 
 int main() {
     time_t t = time(NULL);
@@ -408,6 +449,7 @@ int main() {
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
             printf("Depositing...\n");
+            deposit();
             logTransaction("deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
