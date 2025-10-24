@@ -394,8 +394,14 @@ void updateBalance(char operation,int amount, int accountNumber) {
     fscanf(accFile, "Balance: %f\n", &acc.balance);
 
     if (operation == '+') {
-        acc.balance += amount;
-        printf("Deposit successful. ");
+        if (amount > 0 && amount <= 50000) {
+            acc.balance += amount;
+            printf("Deposit successful. ");
+        } else{
+            printf("Please input between RM0 and RM50,000 only.");
+            fclose(accFile);
+            return;
+        }
     } else if (operation == '-') {
         if (amount <= acc.balance) {
             acc.balance -= amount;
