@@ -30,16 +30,16 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
 
     switch (posY) {
         // if text at top, print seperator 
-        // ' __________________'
-        // '/                  \'
+        // '____________________'
+        // '|                  |'
         case UITop:
             printf(" ");
-            // print seperator - 2 (excluding / and \ at edges)
-            for (int i = 0; i < UIWidth - 2; i++) printf("_");
+            // print seperator
+            for (int i = 0; i < UIWidth; i++) printf("_");
             printf(" \n");
-            printf("/");
-            for (int i = 0; i < UIWidth - 2; i++) printf(" ");
-            printf("\\\n");
+            printf("|");
+            for (int i = 0; i < UIWidth - 2; i++) printf(" "); // padding excluding borders '| |'
+            printf("|\n");
             break;
         // if text at bottom, print seperator '\__________________/'
         case UIBottom:
@@ -171,7 +171,7 @@ void printLoad(const char* text, int duration) {
     printUI(text, UIMiddle, UILeft);  
     printUI("", UIBottom, UICenter);    
     delay(duration);
-    system("cls");
+    // system("cls");
 }
 
 int countAccounts() {
@@ -596,7 +596,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
                 fee = 0.03; // 3% fee
             } else {
                 printRetry("Transfer error. Transfers only allowed between different account types.");
-                printUI("Savings → Current (2% fee) or Current → Savings (3% fee).", UIMiddle, UILeft);
+                printUI("Savings --> Current (2%% fee) or Current --> Savings (3%% fee).", UIMiddle, UILeft);
                 printUI("Same account type transfers are not permitted.", UIMiddle, UILeft);
                 fclose(accFile);
                 return;
@@ -629,9 +629,13 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
     fclose(accFile);
 
-    char balanceMsg[50];
-    sprintf(balanceMsg, "New balance: %.2f", acc.balance);
-    printEnd(balanceMsg);
+    // only show account balance if withdrawing money from own account (for deposit own account, show account balance locally)
+    // so that receiever account balance is not shown when remitting
+    if (operation == '-') {
+        char balanceMsg[50];
+        sprintf(balanceMsg, "New account balance: %.2f", acc.balance);
+        printUI(balanceMsg, UIMiddle, UILeft);
+    }
 }
 
 
@@ -647,6 +651,13 @@ void deposit() {
     printInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput);
     updateBalance('+', amount, accountNumber, NULL);
+
+    float newBalance = getAccountBalance(accountNumber);
+    if (newBalance >= 0) {
+        char text[60];
+        sprintf(text, "Current Balance: RM%.2f", newBalance);
+        printUI(text, UIMiddle, UILeft);
+    }
 
     printLoad("Going back to Main Menu...", 4);  
 }
@@ -765,8 +776,7 @@ int main() {
         printUI("-", UIBorder, UICenter);
 
         // get input of char choice, with print 'Select Option: '
-        printInput("Select Option: ", choice, sizeof(choice)); 
-        printUI("-", UIBorder, UICenter);        
+        printInput("Select Option: ", choice, sizeof(choice));
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             printLoad("Creating account...", loadDuration);  

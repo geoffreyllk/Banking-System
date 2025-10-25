@@ -1,0 +1,6 @@
+Name: Alex Choi
+ID: 0908071828
+Account Number: 1023451
+Account Type: Savings
+PIN: 3333
+Balance: 300.00

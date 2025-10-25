@@ -1,6 +1,0 @@
-Name: Bob
-ID: 12345678
-Account Number: 1016726
-Account Type: Savings
-PIN: 1234
-Balance: 0.00
