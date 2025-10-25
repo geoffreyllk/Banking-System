@@ -48,6 +48,27 @@ void logTransaction(const char *message) {
     fclose(transactionLog);
 }
 
+// check if account number exists in index.txt
+int isAccountNumberInIndex(int accNum) {
+    FILE *indexFile = fopen("database/index.txt", "r");
+    if (!indexFile) {
+        printf("Error: couldn’t open index file.\n");
+        return 0;
+    }
+
+    int number;
+    int found = 0;
+    while (fscanf(indexFile, "%d", &number) == 1) {
+        if (number == accNum) {
+            found = 1;
+            break;
+        }
+    }
+
+    fclose(indexFile);
+    return found;
+}
+
 // verifyAccount function for delete(requireID), deposit, withdraw and remittance(account to be transferred, no ID or PIN required)
 int verifyAccount(int requireID, int *returnAccountNumber) {
     int running = 1;
@@ -106,6 +127,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
                 printf("Enter last 4 characters of your ID: ");
                 scanf(" %4s", idInput);
 
+                // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
                     printf("Incorrect ID. Try again.\n");
                 } else {
@@ -116,21 +138,21 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 
         // verify pin with 4 attempts
         int attemptsLeft = 4;
-        int pinCorrect = 0;
         while (attemptsLeft > 0) {
-            printf("Enter your 4-digit PIN (Attempts left: %d): ", attemptsLeft);
+            printf("Enter your 4-digit PIN: ");
             scanf(" %4s", pinInput);
 
+            // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
-                *returnAccountNumber = accNumInput; // if correct, return account number for use
+                *returnAccountNumber = accNumInput; // if pins are same (correct), return account number for use
                 return 1;
             } else {
-                attemptsLeft--;
+                attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
                 if (attemptsLeft == 0) {
                     printf("You have run out of attempts. Returning to main menu.\n");
                     return 0;
                 } else {
-                    printf("Incorrect PIN. ");
+                    printf("Incorrect PIN. You have: %d attempts left.", attemptsLeft);
                 }
             }
         }
@@ -139,27 +161,6 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 }
 
 // --- 1. create account functions ---
-
-// check if an account number is already taken
-int isAccountNumberUnique(int accountNumber) {
-    FILE *indexFile; 
-    indexFile = fopen("database/index.txt", "r");
-    // check if file is empty
-    if (indexFile == NULL) {
-        return 1;
-    }
-
-    int existingNumber;
-    while (fscanf(indexFile, "%d", &existingNumber) == 1) {
-        if (existingNumber == accountNumber) {
-            fclose(indexFile);
-            return 0;
-        }
-    }
-
-    fclose(indexFile);
-    return 1;
-}
 
 void saveAccountNumber(int accountNumber) {
     FILE *indexFile;
@@ -253,7 +254,7 @@ void createAccount() {
     int accountNumber;
     do {
         accountNumber = rand() % (999999999 - 1000000 + 1) + 1000000;
-    } while (!isAccountNumberUnique(accountNumber));
+    } while (isAccountNumberInIndex(accountNumber)); // keep generating a random number until it is not in index.txt
 
     acc.accountNumber = accountNumber;
     saveAccountNumber(accountNumber);
@@ -296,26 +297,6 @@ void getAccounts() {
         printf("- %s", line);
     }
     fclose(indexFile);
-}
-
-int isAccountNumberInIndex(int accNum) {
-    FILE *indexFile = fopen("database/index.txt", "r");
-    if (!indexFile) {
-        printf("Error: couldn’t open index file.\n");
-        return 0;
-    }
-
-    int number;
-    int found = 0;
-    while (fscanf(indexFile, "%d", &number) == 1) {
-        if (number == accNum) {
-            found = 1;
-            break;
-        }
-    }
-
-    fclose(indexFile);
-    return found;
 }
 
 void deleteAccount() {
