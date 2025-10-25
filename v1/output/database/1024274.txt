@@ -1,0 +1,6 @@
+Name: Sharon Lee
+ID: 123456789
+Account Number: 1024274
+Account Type: Current
+PIN: 7890
+Balance: 4491.00

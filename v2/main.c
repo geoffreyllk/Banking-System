@@ -1,3 +1,11 @@
+/*
+Description:
+- This is version 2 of the banking system.
+- This version builds on version 1 in file 'v1' and introduces a more user-friendly UI using proper formatting
+- Since the assignment only evaluates core functionality and error handling, and not frontend UI, this version does not need to be graded
+- New functions: printUI(), printInput(), printTitle(), printBorder(), printRetry(), printEnd(), delay(), and printLoad()
+*/
+
 #include <stdio.h>
 #include <stdlib.h> 
 #include <stdint.h>
@@ -20,6 +28,8 @@ struct Account {
 
 struct Account acc;
 
+// --- v2 functions ---
+// for UI positioning
 typedef enum { UITop, UIMiddle, UIBottom, UIBorder} UIPositionY;
 typedef enum { UILeft, UICenter, UIRight} UIPositionX;
 
@@ -179,12 +189,19 @@ void printLoad(const char* text, int duration) {
     // system("cls");
 }
 
+// --- v2 functions END ---
+
+
 int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
 
     int count = 0, number;
-    while (fscanf(indexFile, "%d", &number) == 1) {
+    while (1) {
+        int result = fscanf(indexFile, "%d", &number);
+        if (result != 1) {
+            break; // when no more numbers exit
+        }
         count++;
     }
 
@@ -201,7 +218,8 @@ void logTransaction(const char *message) {
     time_t t = time(NULL);
 
     char *timeStr = ctime(&t);
-    timeStr[strcspn(timeStr, "\n")] = 0; // remove newline
+    // remove newline from buffer to print on same line
+    timeStr[strcspn(timeStr, "\n")] = 0; // finds position of \\n and replaces with \\0 to end string
 
     fprintf(transactionLog, "[%s] %s\n", timeStr, message);
     fclose(transactionLog);
@@ -253,7 +271,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 
         // get data of account number inputted from file to compare
         char filename[128];
-        sprintf(filename, "database/%d.txt", accNum);
+        sprintf(filename, "database/%d.txt", accNum); // format account number for file directory
 
         FILE *accFile;
         accFile = fopen(filename, "r");
@@ -266,12 +284,13 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         int storedAccNum;
         float balance;
 
-        fscanf(accFile, "Name: %[^\n]\n", storedName);
+        // read and store account data
+        fscanf(accFile, "Name: %[^\n]\n", storedName); // long string %[^\n] reads until newline
         fscanf(accFile, "ID: %12s\n", storedID);
         fscanf(accFile, "Account Number: %d\n", &storedAccNum);
-        fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
+        fscanf(accFile, "Account Type: %[^\n]\n", typeStr); // long string %[^\n] reads until newline
         fscanf(accFile, "PIN: %4s\n", storedPIN);
-        fscanf(accFile, "Balance: %f\n", &balance);        
+        fscanf(accFile, "Balance: %f\n", &balance);
 
         fclose(accFile);
 
@@ -344,7 +363,8 @@ void createAccount() {
         printInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID));
 
         valid = 1;
-        for (size_t i = 0; i < strlen(acc.ID); i++) {
+        int idLength = strlen(acc.ID);
+        for (int i = 0; i < idLength; i++) {
             // check if acc Id is digit
             if (!isdigit(acc.ID[i])) {
                 valid = 0;
@@ -411,7 +431,9 @@ void createAccount() {
     srand(time(NULL));
     int accountNumber;
     do {
-        accountNumber = rand() % (999999999 - 1000000 + 1) + 1000000;
+        int min = 1000000; // 7 digits
+        int max = 999999999; // 9 digits
+        accountNumber = min + rand() % (max + 1 - min);;
     } while (isAccountNumberInIndex(accountNumber)); // keep generating a random number until it is not in index.txt
 
     acc.accountNumber = accountNumber;
@@ -419,11 +441,11 @@ void createAccount() {
 
     // create filename based on account number
     char filename[100];
-    sprintf(filename, "database/%d.txt", acc.accountNumber);
+    sprintf(filename, "database/%d.txt", acc.accountNumber); // format to account number in file directory
 
     FILE *accFile = fopen(filename, "w");
     if (accFile == NULL) {
-        printUI("Error: could not create account file.", UIMiddle, UILeft);
+        printUI("Error. File is missing. Failed to create new account.", UIMiddle, UILeft);
         return;
     }
 
@@ -650,9 +672,9 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
         printEnd("Withdrawal/Transfer successful.");
     }
 
-    // Go back to start of file and rewrite
-    fseek(accFile, 0, SEEK_SET);
-    // write to file
+    // Go back to start of file
+    rewind(accFile);
+    // rewrite accFile info with new balance
     fprintf(accFile, "Name: %s\n", acc.name);
     fprintf(accFile, "ID: %s\n", acc.ID);
     fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
@@ -769,6 +791,7 @@ void remittance() {
     }
     fclose(file);
 
+    // validate updateBalance and pass receiverType to compare with senderType for remittance fee
     if (updateBalance('-', amount, senderAccount, receiverType)) {
         // only update receiver account if sender account was successful updated
         updateBalance('+', amount, receiverAccount, NULL);
@@ -818,6 +841,13 @@ int main() {
 
         // get input of char choice, with print 'Select Option: '
         printInput("Select Option: ", choice, sizeof(choice));
+
+        // convert choice to lowercase
+        int i = 0;
+        while (choice[i] != '\0') {
+            choice[i] = tolower(choice[i]);  // turn each character into lowercase
+            i++;
+        }
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             printLoad("Creating account...", loadDuration);  
