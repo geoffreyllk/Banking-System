@@ -176,7 +176,7 @@ void saveAccountNumber(int accountNumber) {
 void createAccount() {
     printf("Please fill in the following: \n");
     printf("Full Name: ");
-    scanf(" %[^\n]", acc.name);
+    scanf(" %99[^\n]", acc.name); // limit name to max 99 chars
 
     int valid = 0;
     // check if ID inputted is less than 13 char & is integers
@@ -319,17 +319,24 @@ void deleteAccount() {
             accFile = fopen(filename, "r");
             if (!accFile) {
                 printf("Account not found.\n");
-                return 0;
+                return;
             }
 
             if (remove(filename) == 0) {
-
                 // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
                 FILE *indexRead = fopen("database/index.txt", "r");
-                FILE *indexTemp = fopen("database/temp_index.txt", "w");
                 // error check
-                if (!indexRead || !indexTemp) {
-                    printf("Error updating index file.\n");
+                if (!indexRead) {
+                    printf("Error: Could not open index.txt for reading.\n");
+                    fclose(accFile);
+                    return;
+                }
+
+                FILE *indexTemp = fopen("database/temp_index.txt", "w");
+                if (!indexTemp) {
+                    printf("Error: Could not create temporary index file.\n");
+                    fclose(accFile);
+                    fclose(indexRead);  // close indexFile too because its not null (from prev error check)
                     return;
                 }
 
