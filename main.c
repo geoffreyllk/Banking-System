@@ -23,9 +23,9 @@ struct Account acc;
 typedef enum { UITop, UIMiddle, UIBottom, UIBorder } UIPositionY;
 typedef enum { UILeft, UICenter, UIRight } UIPositionX;
 
+// size of UI e.g. 50 characters wide
+const int UIWidth = 50;
 void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
-    // size of UI e.g. 50 characters wide
-    int UIWidth = 50;
     int textLength = strlen(text);
 
     switch (posY) {
@@ -86,8 +86,33 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
         case UIBorder:
             printf("| ");
             for (int i = 0; i < UIWidth - 4; i++) printf(text);
-            printf(" |");
+            printf(" |\n");
     }
+}
+
+// for inputs by user, printing a complete user prompt inside UI border
+void printInput(const char* prompt, char* input, int inputSize) {
+    int promptLength = strlen(prompt);
+    printf("| %s", prompt);
+    
+    for (int i = 0; i < UIWidth - promptLength - 4; i++) printf(" ");
+    printf(" |\n");
+
+    // move cursor
+    printf("\033[1A"); // move up by 1 line
+    printf("\033[%dC", promptLength + 2); // move to input position
+
+    // read input
+    int i = 0;
+    char ch;
+    // loop while index is < input size - 1 (leave space for \0) and until user presses enter or End of File (EOF)
+    while (i < inputSize - 1 && (ch = getchar()) != '\n' && ch != EOF) {
+        // store character in input string array & move pointer to next index
+        input[i] = ch;
+        i++;
+    }
+    // append to input string array to terminate
+    input[i] = '\0';
 }
 
 int countAccounts() {
@@ -590,6 +615,7 @@ int main() {
     char* timeStr = ctime(&t);
     timeStr[strcspn(timeStr, "\n")] = 0; // remove newline
 
+    logTransaction("Session Start");
     printUI("", UITop, UICenter);
     printUI("Banking System", UIMiddle, UICenter);  
     printUI("", UIMiddle, UICenter);  
@@ -603,48 +629,48 @@ int main() {
     printUI(accountsText, UIMiddle, UILeft);
     
     printUI("-", UIBorder, UICenter);
-    printf("\n");
+    printUI("", UIMiddle, UICenter);  
     char choice[20];
 
     int running = 1;
     while (running) {
-        printUI("Please choose the following (1-6): ", UIMiddle, UICenter);  
-        printUI("1. Create Account", UIMiddle, UICenter);  
-        printUI("2. Delete Account", UIMiddle, UICenter);  
-        printUI("3. Deposit", UIMiddle, UICenter);  
-        printUI("4. Withdraw", UIMiddle, UICenter);  
-        printUI("5. Remittance", UIMiddle, UICenter);  
-        printUI("6. Exit", UIMiddle, UICenter);  
-        printUI("Select Option:", UIMiddle, UICenter);  
-        
-        scanf("%s", choice);
+        printUI("Please choose the following (1-6): ", UIMiddle, UILeft);  
+        printUI("1. Create Account", UIMiddle, UILeft);  
+        printUI("2. Delete Account", UIMiddle, UILeft);  
+        printUI("3. Deposit", UIMiddle, UILeft);  
+        printUI("4. Withdraw", UIMiddle, UILeft);  
+        printUI("5. Remittance", UIMiddle, UILeft);  
+        printUI("6. Exit", UIMiddle, UILeft);  
+
+        // get input of char choice, with print 'Select Option: '
+        printInput("Select Option: ", choice, sizeof(choice));  
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
-            printf("Creating account...\n");
+            printUI("Creating account...", UIMiddle, UILeft);  
             createAccount();
-            logTransaction("create account");
+            logTransaction("Create account");
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
-            printf("Deleting account...\n");
+            printUI("Deleting account...", UIMiddle, UILeft);
             deleteAccount();
-            logTransaction("delete account");
+            logTransaction("Delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
-            printf("Depositing...\n");
+            printUI("Depositing...", UIMiddle, UILeft);
             deposit();
-            logTransaction("deposit");
+            logTransaction("Deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
-            printf("Withdrawing...\n");
+            printUI("Withdrawing...", UIMiddle, UILeft);
             withdraw();
-            logTransaction("withdrawal");
+            logTransaction("Withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
-            printf("Remitting funds...");
+            printUI("Remitting funds...", UIMiddle, UILeft);
             remittance();
-            logTransaction("remittance");
+            logTransaction("Remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
-            printf("Thank you, goodbye. Exiting...!\n");
-            logTransaction("session ended");
+            printUI("Thank you for using our service. Please come again next time... BYE!", UIMiddle, UILeft);
+            logTransaction("Session ended");
             break;
         } 
         else {
