@@ -20,11 +20,11 @@ struct Account {
 
 struct Account acc;
 
-typedef enum { UITop, UIMiddle, UIBottom, UIBorder } UIPositionY;
-typedef enum { UILeft, UICenter, UIRight } UIPositionX;
+typedef enum { UITop, UIMiddle, UIBottom, UIBorder} UIPositionY;
+typedef enum { UILeft, UICenter, UIRight} UIPositionX;
 
-// size of UI e.g. 50 characters wide
-const int UIWidth = 50;
+// size of UI e.g. 75 characters wide
+const int UIWidth = 75;
 void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
     int textLength = strlen(text);
 
@@ -113,6 +113,28 @@ void printInput(const char* prompt, char* input, int inputSize) {
     }
     // append to input string array to terminate
     input[i] = '\0';
+}
+
+// print a title outside the UI with no '| |' borders
+void printTitle(const char* title) {
+    // format text to have spacings on side like " Welcome ", so title will be "======== Welcome ========"
+    char formattedText[200];
+    sprintf(formattedText, " %s ", title);
+    int textLength = strlen(formattedText);
+
+    int padding = (UIWidth - textLength) / 2;
+
+    printf("\n");
+    // construct final text with '=' as padding
+    for (int i = 0; i < padding; i++) printf("=");
+    printf("%s", formattedText);
+    for (int i = 0; i < padding; i++) printf("=");
+
+    // if length of text is odd, add one more = to the right
+    if ( ((UIWidth - textLength) % 2) != 0) {
+        printf("=");
+    }
+    printf("\n");
 }
 
 int countAccounts() {
@@ -634,8 +656,9 @@ int main() {
     timeStr[strcspn(timeStr, "\n")] = 0; // remove newline
 
     logTransaction("Session Start");
+    printTitle("Welcome to the official Bank System!");
     printUI("", UITop, UICenter);
-    printUI("Banking System", UIMiddle, UICenter);  
+    printUI("Main Menu", UIMiddle, UICenter);  
     printUI("", UIMiddle, UICenter);  
     
     char sessionText[100];
