@@ -484,7 +484,7 @@ void deleteAccount() {
             char confirm[2];
             printInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm));
 
-            if (confirm[0] == 'y' || confirm[0] == 'Y') {
+            if (tolower(confirm[0]) == 'y') {
                 // create filename string of account number e.g. 'database/1234567.txt'
                 char filename[128];
                 sprintf(filename, "database/%d.txt", accountNumber);
@@ -499,7 +499,6 @@ void deleteAccount() {
                 }
                 fclose(accFile);
 
-                
                 if (remove(filename) == 0) {
                     // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
                     FILE *indexRead = fopen("database/index.txt", "r");
@@ -531,8 +530,19 @@ void deleteAccount() {
                     fclose(indexTemp);
 
                     // remove current index.txt and replace with temp file with all accounts except the file to be deleted
-                    remove("database/index.txt");
-                    rename("database/temp_index.txt", "database/index.txt");
+                    // validation checks
+                    if (remove("database/index.txt") != 0) {
+                        printUI("Error: Could not remove old index file.", UIMiddle, UILeft);
+                        remove("database/temp_index.txt");
+                        printLoad("Going back to Main Menu...", 2);
+                        return;
+                    }
+
+                    if (rename("database/temp_index.txt", "database/index.txt") != 0) {
+                        printUI("Error: Could not rename temporary index file.", UIMiddle, UILeft);
+                        printLoad("Going back to Main Menu...", 2);
+                        return;
+                    }
                     
                     printEnd("Account deleted successfully");
                     printLoad("Going back to Main Menu...", 2);
@@ -542,7 +552,7 @@ void deleteAccount() {
                     printLoad("Going back to Main Menu...", 2);
                     return;
                 }
-            } else if (confirm[0] == 'n' || confirm[0] == 'N') {
+            } else if (tolower(confirm[0]) == 'n') {
                 printEnd("Account deleted canceled.");
                 printLoad("Going back to Main Menu...", 2);
                 return;
@@ -674,7 +684,6 @@ void deposit() {
     char amountInput[10];
     printInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput); // convert ascii to integer
-    updateBalance('+', amount, accountNumber, NULL);
 
     // if updateBalance successful (1) then print current balance
     if (updateBalance('+', amount, accountNumber, NULL)) {
