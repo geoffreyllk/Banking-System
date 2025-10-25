@@ -307,66 +307,72 @@ void deleteAccount() {
 
     // confirm deletion
     if (verifyAccount(1, &accountNumber)) {
-        char confirm[10];
-        printf("Are you sure you want to delete your account? (y/n): ");
-        scanf(" %s", confirm);
+        int running = 1;
+        while (running) {
+            char confirm;
+            printf("Are you sure you want to delete your account? (y/n): ");
+            scanf(" %c", &confirm); // only 1 character allowed + skip any blank whitespace
+            confirm = tolower(confirm); // convert to lowercase
 
-        if (strcmp(confirm, "y") == 0 || strcmp(confirm, "Y") == 0) {
-            char filename[128];
-            sprintf(filename, "database/%d.txt", accountNumber);
+            if (confirm == 'y') {
+                // create filename string of account number e.g. 'database/1234567.txt'
+                char filename[128];
+                sprintf(filename, "database/%d.txt", accountNumber);
 
-            FILE *accFile;
-            accFile = fopen(filename, "r");
-            if (!accFile) {
-                printf("Account not found.\n");
-                return;
-            }
-
-            if (remove(filename) == 0) {
-                // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
-                FILE *indexRead = fopen("database/index.txt", "r");
-                // error check
-                if (!indexRead) {
-                    printf("Error: Could not open index.txt for reading.\n");
-                    fclose(accFile);
+                FILE *accFile;
+                accFile = fopen(filename, "r");
+                // check if account file exists, if not return not found
+                if (!accFile) {
+                    printf("Account not found.\n");
                     return;
                 }
+                fclose(accFile);
 
-                FILE *indexTemp = fopen("database/temp_index.txt", "w");
-                if (!indexTemp) {
-                    printf("Error: Could not create temporary index file.\n");
-                    fclose(accFile);
-                    fclose(indexRead);  // close indexFile too because its not null (from prev error check)
-                    return;
-                }
-
-                int number;
-                while (fscanf(indexRead, "%d", &number) == 1) {
-                    // if NOT the account number to be deleted
-                    if (number != accountNumber) {
-                        // write to temporary file
-                        fprintf(indexTemp, "%d\n", number);
-                    }
-                }
-
-                fclose(indexRead);
-                fclose(indexTemp);
-
-                // remove current index.txt and replace with temp file with all accounts except the file to be deleted
-                remove("database/index.txt");
-                rename("database/temp_index.txt", "database/index.txt");
                 
-                printf("Account deleted successfully.\n");
-                fclose(accFile);
-                return; 
-            } else {
-                printf("Error deleting account.\n");
-                fclose(accFile);
+                if (remove(filename) == 0) {
+                    // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
+                    FILE *indexRead = fopen("database/index.txt", "r");
+                    // error check
+                    if (!indexRead) {
+                        printf("Error: Could not open index.txt for reading.\n");
+                        return;
+                    }
+
+                    FILE *indexTemp = fopen("database/temp_index.txt", "w");
+                    if (!indexTemp) {
+                        printf("Error: Could not create temporary index file.\n");
+                        fclose(indexRead);  // close indexFile too because its not null (from prev error check)
+                        return;
+                    }
+
+                    int number;
+                    while (fscanf(indexRead, "%d", &number) == 1) {
+                        // if NOT the account number to be deleted
+                        if (number != accountNumber) {
+                            // write to temporary file
+                            fprintf(indexTemp, "%d\n", number);
+                        }
+                    }
+
+                    fclose(indexRead);
+                    fclose(indexTemp);
+
+                    // remove current index.txt and replace with temp file with all accounts except the file to be deleted
+                    remove("database/index.txt");
+                    rename("database/temp_index.txt", "database/index.txt");
+                    
+                    printf("Account deleted successfully.\n");
+                    return; 
+                } else {
+                    printf("Error deleting account.\n");
+                    return;
+                }
+            } else if (confirm == 'n') {
+                printf("Account deletion canceled.\n");
                 return;
+            } else {
+                printf("Input error. Please input 'y' or 'n' to confirm deletion. \n");
             }
-        } else {
-            printf("Account deletion canceled.\n");
-            return;
         }
     }
 }
@@ -393,6 +399,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
 
     float fee = 0.0;
     if (operation == '+') {
+        // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
             printf("Deposit successful. ");
@@ -402,11 +409,18 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
             return;
         }
     } else if (operation == '-') {
+        // validate when remittance, percentage fee based on transfer accounts 
         if (receiverType != NULL) {
             if (strcmp(acc.type, "Savings") == 0 && strcmp(receiverType, "Current") == 0) {
                 fee = 0.02; // 2% fee
             } else if (strcmp(acc.type, "Current") == 0 && strcmp(receiverType, "Savings") == 0) {
                 fee = 0.03; // 3% fee
+            } else {
+                printf("Transfer error. Transfers only allowed between different account types.\n");
+                printf("Savings → Current (2%% fee) or Current → Savings (3%% fee).\n");
+                printf("Same account type transfers are not permitted. \n");
+                fclose(accFile);
+                return;
             }
         }
         float totalAmount = amount + (amount * fee);
@@ -420,7 +434,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         if (fee > 0) {
             printf("A remittance fee of %.2f%% has been applied.\n", fee * 100);
         }
-        printf("Withdrawal/Transfer successful. ");
+        printf("Withdrawal/Transfer successful. \n");
     }
 
     // Go back to start of file and rewrite
@@ -475,6 +489,7 @@ void remittance() {
     // get receiver type
     char filename[128];
     char receiverType[10];
+
     sprintf(filename, "database/%d.txt", receiverAccount);
     FILE *file; 
     file = fopen(filename, "r");
@@ -482,10 +497,15 @@ void remittance() {
         printf("Recipient account file not found.\n");
         return;
     }
-    fscanf(file, "Name: %[^\n]\n", acc.name);
-    fscanf(file, "ID: %s\n", acc.ID);
-    fscanf(file, "Account Number: %d\n", &acc.accountNumber);
-    fscanf(file, "Account Type: %[^\n]\n", receiverType);
+
+    // read only receiverType in file
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        if (strstr(line, "Account Type:") != NULL) {
+            sscanf(line, "Account Type: %[^\n]", receiverType);
+            break;
+        }
+    }
     fclose(file);
 
     updateBalance('-', amount, senderAccount, receiverType);
