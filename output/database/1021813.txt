@@ -1,5 +1,0 @@
-Name: d
-Account Number: 1021813
-Account Type: Current
-PIN: 1234
-Balance: 0.00

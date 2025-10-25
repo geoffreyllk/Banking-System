@@ -1,5 +1,0 @@
-Name: 0
-Account Number: 1027977
-Account Type: Savings
-PIN: 1234
-Balance: 0.00

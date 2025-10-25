@@ -20,6 +20,76 @@ struct Account {
 
 struct Account acc;
 
+typedef enum { UITop, UIMiddle, UIBottom, UIBorder } UIPositionY;
+typedef enum { UILeft, UICenter, UIRight } UIPositionX;
+
+void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
+    // size of UI e.g. 50 characters wide
+    int UIWidth = 50;
+    int textLength = strlen(text);
+
+    switch (posY) {
+        // if text at top, print seperator 
+        // ' __________________'
+        // '/                  \'
+        case UITop:
+            printf(" ");
+            // print seperator - 2 (excluding / and \ at edges)
+            for (int i = 0; i < UIWidth - 2; i++) printf("_");
+            printf(" \n");
+            printf("/");
+            for (int i = 0; i < UIWidth - 2; i++) printf(" ");
+            printf("\\\n");
+            break;
+        // if text at bottom, print seperator '\__________________/'
+        case UIBottom:
+            printf("\\");
+            // print seperator - 2 (excluding '/' and '\' at edges)
+            for (int i = 0; i < UIWidth - 2; i++) printf("_");
+            printf("/\n");
+            break;
+        // if text in middle, print '|' at the edges
+        case UIMiddle:
+            printf("|");
+            
+            // Xposition of text, left center right
+            if (posX == UICenter) {
+                // padding is UIWidth - text - 2(border '|' at edges) and divide by 2 for left and right
+                int padding = (UIWidth - textLength - 2) / 2;
+                // print padding e.g. "|    hi    |"
+                for (int i = 0; i < padding; i++) printf(" ");
+                printf("%s", text);
+                for (int i = 0; i < padding; i++) printf(" ");
+
+                // if total padding is odd, add one extra space on the right
+                if ( ((UIWidth - textLength - 2) % 2) != 0) {
+                    printf(" ");
+                }
+            }
+            else if (posX == UILeft) {
+                // if left, print '| text          |'
+                printf(" %s", text);
+                // - 3 to include the space before text '| text'
+                for (int i = 0; i < UIWidth - textLength - 3; i++) printf(" ");
+            }
+            else if (posX == UIRight) {
+                // if right, print '|          text |'
+                for (int i = 0; i < UIWidth - textLength - 3; i++) printf(" ");
+                // - 3 to include the space before text 'text |'
+                printf("%s ", text);
+            }
+            
+            // close border and go next line
+            printf("|\n");
+            break;
+        // if border then print '| ----------- |' with one spacing beside left and right borders (border can be customised e.g. '-' or '_ or '=' )
+        case UIBorder:
+            printf("| ");
+            for (int i = 0; i < UIWidth - 4; i++) printf(text);
+            printf(" |");
+    }
+}
+
 int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
@@ -185,7 +255,8 @@ void createAccount() {
         scanf(" %12[^\n]", acc.ID);
 
         valid = 1;
-        for (int i = 0; i < strlen(acc.ID); i++) {
+        for (size_t i = 0; i < strlen(acc.ID); i++) {
+            // check if acc Id is digit
             if (!isdigit(acc.ID[i])) {
                 valid = 0;
                 printf("Invalid ID. Only numbers allowed.\n");
@@ -516,23 +587,36 @@ void remittance() {
 
 int main() {
     time_t t = time(NULL);
-    printf("--- Banking Sytem ---\n");
-    printf("Session start: %s\n", ctime(&t));
-    printf("No. Accounts Loaded: %d\n\n", countAccounts());
+    char* timeStr = ctime(&t);
+    timeStr[strcspn(timeStr, "\n")] = 0; // remove newline
 
+    printUI("", UITop, UICenter);
+    printUI("Banking System", UIMiddle, UICenter);  
+    printUI("", UIMiddle, UICenter);  
+    
+    char sessionText[100];
+    sprintf(sessionText, "Session start: %s", timeStr);
+    printUI(sessionText, UIMiddle, UILeft);
+    
+    char accountsText[50];
+    sprintf(accountsText, "No. Accounts Loaded: %d", countAccounts());
+    printUI(accountsText, UIMiddle, UILeft);
+    
+    printUI("-", UIBorder, UICenter);
+    printf("\n");
     char choice[20];
 
     int running = 1;
     while (running) {
-        printf("----------------------------------");
-        printf("Please choose the following (1-6): ");
-        printf("\n1. Create Account\n");
-        printf("2. Delete Account\n");
-        printf("3. Deposit\n");
-        printf("4. Withdraw\n");
-        printf("5. Remittance\n");
-        printf("6. Exit\n");
-        printf("Select option: ");
+        printUI("Please choose the following (1-6): ", UIMiddle, UICenter);  
+        printUI("1. Create Account", UIMiddle, UICenter);  
+        printUI("2. Delete Account", UIMiddle, UICenter);  
+        printUI("3. Deposit", UIMiddle, UICenter);  
+        printUI("4. Withdraw", UIMiddle, UICenter);  
+        printUI("5. Remittance", UIMiddle, UICenter);  
+        printUI("6. Exit", UIMiddle, UICenter);  
+        printUI("Select Option:", UIMiddle, UICenter);  
+        
         scanf("%s", choice);
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
