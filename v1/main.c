@@ -29,6 +29,12 @@ struct Account {
 
 struct Account acc;
 
+// to clear input buffer after fgets number inputs or if input variable is small e.g. PIN1Input[10]
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
 int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
@@ -99,6 +105,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             fgets(accNumInput, sizeof(accNumInput), stdin);
             accNumInput[strcspn(accNumInput, "\n")] = 0;
             accNum = atoi(accNumInput); // convert string to integer
+            clearInputBuffer();
 
             if (!isAccountNumberInIndex(accNum)) {
                 printf("Account number not found. Please try again.\n");
@@ -146,6 +153,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
                 printf("Enter last 4 characters of your ID: ");
                 fgets(idInput, sizeof(idInput), stdin);
                 idInput[strcspn(idInput, "\n")] = 0;
+                clearInputBuffer();
 
                 // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
@@ -162,6 +170,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             printf("Enter your 4-digit PIN: ");
             fgets(pinInput, sizeof(pinInput), stdin);
             pinInput[strcspn(pinInput, "\n")] = 0;
+            clearInputBuffer();
 
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
@@ -229,7 +238,7 @@ void createAccount() {
         printf("Account type (0 = savings, 1 = current): ");
         fgets(typeInput, sizeof(typeInput), stdin);
         typeInput[strcspn(typeInput, "\n")] = 0;
-
+        
         if (strcmp(typeInput, "0") == 0) {
             strcpy(acc.type, "Savings");
             break;
@@ -248,6 +257,7 @@ void createAccount() {
         printf("Set 4-digit PIN: ");
         fgets(pin1Input, sizeof(pin1Input), stdin);
         pin1Input[strcspn(pin1Input, "\n")] = 0;
+        clearInputBuffer();
         if (sscanf(pin1Input, "%d", &pin1) != 1) {
             printf("Invalid input. Please enter digits only.\n");
             continue;
@@ -261,6 +271,7 @@ void createAccount() {
         printf("Re-enter PIN to confirm: ");
         fgets(pin2Input, sizeof(pin2Input), stdin);
         pin2Input[strcspn(pin2Input, "\n")] = 0;
+        clearInputBuffer();
         if (sscanf(pin2Input, "%d", &pin2) != 1) {
             printf("Invalid input. Please enter digits only.\n");
             continue;
@@ -314,10 +325,7 @@ void createAccount() {
 
 
 // --- 2. delete functions ---
-void getAccounts() {
-    // get number of accounts loaded
-    printf("No. of Accounts Loaded: %d\n", countAccounts());
-
+void getAccounts() {    
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "r");
     if (indexFile == NULL) {
@@ -332,6 +340,9 @@ void getAccounts() {
         printf("%s\n", line);
     }
     fclose(indexFile);
+
+    // get number of accounts loaded
+    printf("No. of Accounts Loaded: %d\n", countAccounts());
 }
 
 void deleteAccount() {
@@ -343,6 +354,8 @@ void deleteAccount() {
 
     // confirm deletion
     if (verifyAccount(1, &accountNumber)) {
+        clearInputBuffer();
+
         int running = 1;
         while (running) {
             char confirm[2];
@@ -350,6 +363,8 @@ void deleteAccount() {
             fgets(confirm, sizeof(confirm), stdin);
             confirm[strcspn(confirm, "\n")] = 0;
 
+            clearInputBuffer();
+            
             if (tolower(confirm[0]) == 'y') {
                 // create filename string of account number e.g. 'database/1234567.txt'
                 char filename[128];
@@ -529,12 +544,14 @@ void deposit() {
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    clearInputBuffer();
 
     char amountInput[10];
     printf("How much would you like to deposit? ");
     fgets(amountInput, sizeof(amountInput), stdin);
-    amountInput[strcspn(amountInput, "\n")] = 0;
+    amountInput[strcspn(amountInput, "\n")] = 0; // finds position of \\n and replaces with \\0 to end string
     int amount = atoi(amountInput); // convert ascii to integer
+    clearInputBuffer();
 
     // if updateBalance successful (1) then print current balance
     if (updateBalance('+', amount, accountNumber, NULL)) {
@@ -550,6 +567,7 @@ void withdraw() {
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    clearInputBuffer();
 
     // get current account balance
     float currentBalance = getAccountBalance(accountNumber);
@@ -562,6 +580,7 @@ void withdraw() {
     fgets(amountInput, sizeof(amountInput), stdin);
     amountInput[strcspn(amountInput, "\n")] = 0;
     int amount = atoi(amountInput);
+    clearInputBuffer();
     updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 }
 
@@ -570,12 +589,14 @@ void remittance() {
 
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
+    clearInputBuffer();
 
     char receiverInput[10];
     printf("Enter recipient account number: ");
     fgets(receiverInput, sizeof(receiverInput), stdin);
     receiverInput[strcspn(receiverInput, "\n")] = 0;
     int receiverAccount = atoi(receiverInput);
+    clearInputBuffer();
     if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
 
     // get current account balance
@@ -589,6 +610,7 @@ void remittance() {
     fgets(amountInput, sizeof(amountInput), stdin);
     amountInput[strcspn(amountInput, "\n")] = 0;
     int amount = atoi(amountInput); // convert to int
+    clearInputBuffer();
 
     // get receiver type
     char filename[128];
@@ -648,6 +670,7 @@ int main() {
         printf("Select Option: ");
         fgets(choice, sizeof(choice), stdin);
         choice[strcspn(choice, "\n")] = 0;
+        clearInputBuffer();
 
         // convert choice to lowercase
         int i = 0;
