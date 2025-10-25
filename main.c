@@ -67,16 +67,16 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
                 }
             }
             else if (posX == UILeft) {
-                // if left, print '| text          |'
-                printf(" %s", text);
-                // - 3 to include the space before text '| text'
-                for (int i = 0; i < UIWidth - textLength - 3; i++) printf(" ");
+                // if left, print '|  text          |'
+                printf("  %s", text);
+                // - 4 to include the double spacing before text '|  text'
+                for (int i = 0; i < UIWidth - textLength - 4; i++) printf(" ");
             }
             else if (posX == UIRight) {
-                // if right, print '|          text |'
-                for (int i = 0; i < UIWidth - textLength - 3; i++) printf(" ");
-                // - 3 to include the space before text 'text |'
-                printf("%s ", text);
+                // if right, print '|          text  |'
+                for (int i = 0; i < UIWidth - textLength - 4; i++) printf(" ");
+                // - 3 to include the double spacing after text 'text  |'
+                printf("%s  ", text);
             }
             
             // close border and go next line
@@ -93,14 +93,14 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
 // for inputs by user, printing a complete user prompt inside UI border
 void printInput(const char* prompt, char* input, int inputSize) {
     int promptLength = strlen(prompt);
-    printf("| %s", prompt);
+    printf("|  %s", prompt);
     
-    for (int i = 0; i < UIWidth - promptLength - 4; i++) printf(" ");
-    printf(" |\n");
+    for (int i = 0; i < UIWidth - promptLength - 6; i++) printf(" ");
+    printf("  |\n");
 
     // move cursor
     printf("\033[1A"); // move up by 1 line
-    printf("\033[%dC", promptLength + 2); // move to input position
+    printf("\033[%dC", promptLength + 3); // move to input position
 
     // read input
     int i = 0;
@@ -147,7 +147,7 @@ void logTransaction(const char *message) {
 int isAccountNumberInIndex(int accNum) {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) {
-        printf("Error: couldn’t open index file.\n");
+        printUI("Error: couldn’t open index file.", UIMiddle, UILeft);
         return 0;
     }
 
@@ -168,31 +168,33 @@ int isAccountNumberInIndex(int accNum) {
 int verifyAccount(int requireID, int *returnAccountNumber) {
     int running = 1;
     while (running) {
-        int accNumInput;
+        char accNumInput[10];
+        int accNum;
         char pinInput[5];
         char idInput[5];
 
         int accountFound = 1;
         // verify account number
         while (accountFound) {
-            printf("Enter your account number: ");
-            scanf("%d", &accNumInput);
+            printInput("Enter your account number: ", accNumInput, sizeof(accNumInput));
+            accNum = atoi(accNumInput); // convert string to integer
 
-            if (!isAccountNumberInIndex(accNumInput)) {
-                printf("Account number not found. Please try again.\n");
+            if (!isAccountNumberInIndex(accNum)) {
+                printUI("Account number not found. Please try again.", UIMiddle, UILeft);
             } else {
                 accountFound = 0;
+                *returnAccountNumber = accNum;  // store converted integer
             }
         }
 
         // get data of account number inputted from file to compare
         char filename[128];
-        sprintf(filename, "database/%d.txt", accNumInput);
+        sprintf(filename, "database/%d.txt", accNum);
 
         FILE *accFile;
         accFile = fopen(filename, "r");
         if (!accFile) {
-            printf("Account not found.\n");
+            printUI("Account not found.", UIMiddle, UILeft);
             return 0;
         }
 
@@ -219,12 +221,11 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             last4IDs[4] = '\0';
             // verify id (compare idInput with last 4 char of ID)
             while (idFound) {
-                printf("Enter last 4 characters of your ID: ");
-                scanf(" %4s", idInput);
+                printInput("Enter last 4 characters of your ID: ", idInput, sizeof(idInput));
 
                 // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
-                    printf("Incorrect ID. Try again.\n");
+                    printUI("Incorrect ID. Try again.", UIMiddle, UILeft);
                 } else {
                     idFound = 0;
                 }
@@ -234,25 +235,34 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         // verify pin with 4 attempts
         int attemptsLeft = 4;
         while (attemptsLeft > 0) {
-            printf("Enter your 4-digit PIN: ");
-            scanf(" %4s", pinInput);
+            printInput("Enter your 4-digit PIN: ", pinInput, sizeof(pinInput));
 
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
-                *returnAccountNumber = accNumInput; // if pins are same (correct), return account number for use
+                *returnAccountNumber = accNum; // if pins are same (correct), return account number for use
                 return 1;
             } else {
                 attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
                 if (attemptsLeft == 0) {
-                    printf("You have run out of attempts. Returning to main menu.\n");
+                    printUI("You have run out of attempts. Returning to main menu.", UIMiddle, UILeft);
                     return 0;
                 } else {
-                    printf("Incorrect PIN. You have: %d attempts left.", attemptsLeft);
+                    char attemptsMsg[50];
+                    sprintf(attemptsMsg, "Incorrect PIN. You have: %d attempts left.", attemptsLeft);
+                    printUI(attemptsMsg, UIMiddle, UILeft);
                 }
             }
         }
     }
     return 0;
+}
+
+// time delay
+void delay(int number_of_seconds)
+{	
+	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
+	clock_t start_time = clock();	
+	while (clock() < start_time + milli_seconds); // looping until not time
 }
 
 // --- 1. create account functions ---
@@ -261,7 +271,7 @@ void saveAccountNumber(int accountNumber) {
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "a");
     if (indexFile == NULL) {
-        printf("Error: couldn’t open index file.\n");
+        printUI("Error: couldn’t open index file.", UIMiddle, UILeft);
         return;
     }
     fprintf(indexFile, "%d\n", accountNumber);
@@ -269,28 +279,27 @@ void saveAccountNumber(int accountNumber) {
 }
 
 void createAccount() {
-    printf("Please fill in the following: \n");
-    printf("Full Name: ");
-    scanf(" %99[^\n]", acc.name); // limit name to max 99 chars
+    printUI("", UITop, UICenter);
+    printUI("Please fill in the following", UIMiddle, UILeft);
+    printInput("Full name: ", acc.name, sizeof(acc.name));
 
     int valid = 0;
     // check if ID inputted is less than 13 char & is integers
     while (!valid) {
-        printf("Identification Number (ID): ");
-        scanf(" %12[^\n]", acc.ID);
+        printInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID));
 
         valid = 1;
         for (size_t i = 0; i < strlen(acc.ID); i++) {
             // check if acc Id is digit
             if (!isdigit(acc.ID[i])) {
                 valid = 0;
-                printf("Invalid ID. Only numbers allowed.\n");
+                printUI("Invalid ID. Only numbers allowed.", UIMiddle, UILeft);
                 break;
             }
         }
         if (valid && (strlen(acc.ID) < 8 || strlen(acc.ID) > 12)) {
             valid = 0;
-            printf("Invalid ID length. Must be 8-12 digits.\n");
+            printUI("Invalid ID length. Must be 8-12 digits.", UIMiddle, UILeft);
         }
     }
 
@@ -298,8 +307,7 @@ void createAccount() {
     // validate 0 or 1 for account type
     while (running) {
         char typeInput[10];
-        printf("Account type (0 = savings, 1 = current): ");
-        scanf("%9s", typeInput);
+        printInput("Account type (0 = savings, 1 = current): ", typeInput, sizeof(typeInput));
 
         if (strcmp(typeInput, "0") == 0) {
             strcpy(acc.type, "Savings");
@@ -308,29 +316,28 @@ void createAccount() {
             strcpy(acc.type, "Current");
             break;
         } else {
-            printf("Invalid type. Please enter 0 or 1 only.\n");
+            printUI("Invalid type. Please enter 0 or 1 only.", UIMiddle, UILeft);
         }
     }
 
     // verify password via double entry
     int pin1, pin2;
+    char pin1Input[10], pin2Input[10];
     while (running) {
-        printf("Set 4-digit PIN: ");
-        if (scanf("%d", &pin1) != 1) {
-            printf("Invalid input. Please enter digits only.\n");
-            while (getchar() != '\n');
+        printInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input));
+        if (sscanf(pin1Input, "%d", &pin1) != 1) {
+            printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
             continue;
         }
 
         if (pin1 < 1000 || pin1 > 9999) {
-            printf("Invalid PIN. Must be 4 digits.\n");
+            printUI("Invalid PIN. Must be 4 digits.", UIMiddle, UILeft);
             continue;
         }
 
-        printf("Re-enter PIN to confirm: ");
-        if (scanf("%d", &pin2) != 1) {
-            printf("Invalid input. Please enter digits only.\n");
-            while (getchar() != '\n');
+        printInput("Re-enter PIN to confirm: ", pin2Input, sizeof(pin2Input));
+        if (sscanf(pin2Input, "%d", &pin2) != 1) {
+            printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
             continue;
         }
 
@@ -338,7 +345,7 @@ void createAccount() {
             sprintf(acc.pin, "%04d", pin1);
             break;
         } else {
-            printf("PINs do not match. Please try again.\n");
+            printUI("PINs do not match. Please try again.", UIMiddle, UILeft);
         }
     }
 
@@ -361,7 +368,7 @@ void createAccount() {
 
     FILE *accFile = fopen(filename, "w");
     if (accFile == NULL) {
-        printf("Error: could not create account file.\n");
+        printUI("Error: could not create account file.", UIMiddle, UILeft);
         return;
     }
 
@@ -375,7 +382,7 @@ void createAccount() {
 
     fclose(accFile);
 
-    printf("\nAccount created successfully!\n");
+    printUI("Account created successfully!", UIMiddle, UICenter);
 }
 
 
@@ -384,13 +391,14 @@ void getAccounts() {
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "r");
     if (indexFile == NULL) {
-        printf("Error: couldn’t open index file to retrieve account numbers.\n");
+        printUI("Error: couldn’t open index file to retrieve account numbers.", UIMiddle, UILeft);
         return;
     }
+    printUI("Saved Accounts:", UIMiddle, UILeft);
     char line[128];
-    printf("Saved Accounts:\n");
     while (fgets(line, sizeof(line), indexFile) != NULL) {
-        printf("- %s", line);
+        line[strcspn(line, "\n")] = 0;
+        printUI(line, UIMiddle, UILeft);
     }
     fclose(indexFile);
 }
@@ -405,12 +413,10 @@ void deleteAccount() {
     if (verifyAccount(1, &accountNumber)) {
         int running = 1;
         while (running) {
-            char confirm;
-            printf("Are you sure you want to delete your account? (y/n): ");
-            scanf(" %c", &confirm); // only 1 character allowed + skip any blank whitespace
-            confirm = tolower(confirm); // convert to lowercase
+            char confirm[2];
+            printInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm));
 
-            if (confirm == 'y') {
+            if (confirm[0] == 'y' || confirm[0] == 'Y') {
                 // create filename string of account number e.g. 'database/1234567.txt'
                 char filename[128];
                 sprintf(filename, "database/%d.txt", accountNumber);
@@ -419,7 +425,7 @@ void deleteAccount() {
                 accFile = fopen(filename, "r");
                 // check if account file exists, if not return not found
                 if (!accFile) {
-                    printf("Account not found.\n");
+                    printUI("Account not found.", UIMiddle, UILeft);
                     return;
                 }
                 fclose(accFile);
@@ -430,13 +436,13 @@ void deleteAccount() {
                     FILE *indexRead = fopen("database/index.txt", "r");
                     // error check
                     if (!indexRead) {
-                        printf("Error: Could not open index.txt for reading.\n");
+                        printUI("Error: Could not open index.txt for reading.", UIMiddle, UILeft);
                         return;
                     }
 
                     FILE *indexTemp = fopen("database/temp_index.txt", "w");
                     if (!indexTemp) {
-                        printf("Error: Could not create temporary index file.\n");
+                        printUI("Error: Could not create temporary index file.", UIMiddle, UILeft);
                         fclose(indexRead);  // close indexFile too because its not null (from prev error check)
                         return;
                     }
@@ -457,17 +463,17 @@ void deleteAccount() {
                     remove("database/index.txt");
                     rename("database/temp_index.txt", "database/index.txt");
                     
-                    printf("Account deleted successfully.\n");
+                    printUI("Account deleted successfully.", UIMiddle, UICenter);
                     return; 
                 } else {
-                    printf("Error deleting account.\n");
+                    printUI("Error deleting account.", UIMiddle, UILeft);
                     return;
                 }
-            } else if (confirm == 'n') {
-                printf("Account deletion canceled.\n");
+            } else if (confirm[0] == 'n' || confirm[0] == 'N') {
+                printUI("Account deletion canceled.", UIMiddle, UICenter);
                 return;
             } else {
-                printf("Input error. Please input 'y' or 'n' to confirm deletion. \n");
+                printUI("Input error. Please input 'y' or 'n' to confirm deletion.", UIMiddle, UILeft);
             }
         }
     }
@@ -481,7 +487,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
 
     FILE *accFile = fopen(filename, "r+"); // read and write to file
     if (!accFile) {
-        printf("Account not found.\n");
+        printUI("Account not found.", UIMiddle, UILeft);
         return;
     }
 
@@ -498,9 +504,9 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
-            printf("Deposit successful. ");
+            printUI("Deposit successful.", UIMiddle, UILeft);
         } else{
-            printf("Please input between RM0 and RM50,000 only.");
+            printUI("Please input between RM0 and RM50,000 only.", UIMiddle, UILeft);
             fclose(accFile);
             return;
         }
@@ -512,25 +518,27 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
             } else if (strcmp(acc.type, "Current") == 0 && strcmp(receiverType, "Savings") == 0) {
                 fee = 0.03; // 3% fee
             } else {
-                printf("Transfer error. Transfers only allowed between different account types.\n");
-                printf("Savings → Current (2%% fee) or Current → Savings (3%% fee).\n");
-                printf("Same account type transfers are not permitted. \n");
+                printUI("Transfer error. Transfers only allowed between different account types.", UIMiddle, UILeft);
+                printUI("Savings → Current (2% fee) or Current → Savings (3% fee).", UIMiddle, UILeft);
+                printUI("Same account type transfers are not permitted.", UIMiddle, UILeft);
                 fclose(accFile);
                 return;
             }
         }
         float totalAmount = amount + (amount * fee);
         if (totalAmount > acc.balance) {
-            printf("Insufficient balance including remittance fee.\n");
+            printUI("Insufficient balance including remittance fee.", UIMiddle, UILeft);
             fclose(accFile);
             return;
         }
 
         acc.balance -= totalAmount;
         if (fee > 0) {
-            printf("A remittance fee of %.2f%% has been applied.\n", fee * 100);
+            char feeMsg[50];
+            sprintf(feeMsg, "A remittance fee of %.2f%% has been applied.", fee * 100);
+            printUI(feeMsg, UIMiddle, UILeft);
         }
-        printf("Withdrawal/Transfer successful. \n");
+        printUI("Withdrawal/Transfer successful.", UIMiddle, UILeft);
     }
 
     // Go back to start of file and rewrite
@@ -544,7 +552,9 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
     fclose(accFile);
 
-    printf("New balance: %.2f\n", acc.balance);
+    char balanceMsg[50];
+    sprintf(balanceMsg, "New balance: %.2f", acc.balance);
+    printUI(balanceMsg, UIMiddle, UILeft);
 }
 
 
@@ -553,9 +563,9 @@ void deposit() {
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
 
-    int amount;
-    printf("How much would you like to deposit? ");
-    scanf("%d", &amount);
+    char amountInput[10];
+    printInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
+    int amount = atoi(amountInput);
     updateBalance('+', amount, accountNumber, NULL);
 }
 
@@ -563,9 +573,9 @@ void withdraw() {
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
     
-    int amount;
-    printf("How much would you like to withdraw? ");
-    scanf("%d", &amount);
+    char amountInput[10];
+    printInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
+    int amount = atoi(amountInput);
     updateBalance('-', amount, accountNumber, NULL);
 }
 
@@ -573,14 +583,14 @@ void remittance() {
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
 
-    int receiverAccount;
-    printf("Enter recipient account number: ");
-    scanf("%d", &receiverAccount);
+    char receiverInput[10];
+    printInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput));
+    int receiverAccount = atoi(receiverInput);
     if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
 
-    int amount;
-    printf("How much would you like to transfer? ");
-    scanf("%d", &amount);
+    char amountInput[10];
+    printInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
+    int amount = atoi(amountInput);
 
     // get receiver type
     char filename[128];
@@ -590,7 +600,7 @@ void remittance() {
     FILE *file; 
     file = fopen(filename, "r");
     if (!file) {
-        printf("Recipient account file not found.\n");
+        printUI("Recipient account file not found.", UIMiddle, UILeft);
         return;
     }
 
@@ -607,7 +617,15 @@ void remittance() {
     updateBalance('-', amount, senderAccount, receiverType);
     updateBalance('+', amount, receiverAccount, NULL);
 
-    printf("Transfer Succesful!!");
+    printUI("Transfer Successful!", UIMiddle, UICenter);
+}
+
+// small helper to print loading texts in main e.g. 'Depositing...'
+void printLoad(const char* text) {
+    printUI(text, UIMiddle, UILeft);  
+    printUI("", UIBottom, UICenter);
+    delay(2);
+    system("cls");
 }
 
 int main() {
@@ -640,41 +658,43 @@ int main() {
         printUI("3. Deposit", UIMiddle, UILeft);  
         printUI("4. Withdraw", UIMiddle, UILeft);  
         printUI("5. Remittance", UIMiddle, UILeft);  
-        printUI("6. Exit", UIMiddle, UILeft);  
+        printUI("6. Exit", UIMiddle, UILeft);
+        printUI("-", UIBorder, UICenter);
 
         // get input of char choice, with print 'Select Option: '
-        printInput("Select Option: ", choice, sizeof(choice));  
+        printInput("Select Option: ", choice, sizeof(choice)); 
+        printUI("-", UIBorder, UICenter); 
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
-            printUI("Creating account...", UIMiddle, UILeft);  
+            printLoad("Creating account...");  
             createAccount();
             logTransaction("Create account");
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
-            printUI("Deleting account...", UIMiddle, UILeft);
+            printLoad("Deleting account...");
             deleteAccount();
             logTransaction("Delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
-            printUI("Depositing...", UIMiddle, UILeft);
+            printLoad("Depositing...");
             deposit();
             logTransaction("Deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
-            printUI("Withdrawing...", UIMiddle, UILeft);
+            printLoad("Withdrawing...");
             withdraw();
             logTransaction("Withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
-            printUI("Remitting funds...", UIMiddle, UILeft);
+            printLoad("Remitting funds...");
             remittance();
             logTransaction("Remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
-            printUI("Thank you for using our service. Please come again next time... BYE!", UIMiddle, UILeft);
+            printLoad("Thank you for using our service. Please come again next time... BYE!");
             logTransaction("Session ended");
             break;
         } 
         else {
-            printf("Invalid choice. Please try again.\n");
+            printUI("Invalid choice. Please try again.", UIMiddle, UILeft);
         }
     }
 
