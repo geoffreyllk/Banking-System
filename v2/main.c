@@ -637,7 +637,7 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
             acc.balance += amount;
             printEnd("Deposit successful.");
         } else{
-            printRetry("Please input between RM0 and RM50,000 only");
+            printRetry("Please input between RM 0 and RM 50,000 only");
             fclose(accFile);
             return 0;
         }
@@ -687,7 +687,7 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
     // so that receiever account balance is not shown when remitting
     if (operation == '-') {
         char balanceMsg[50];
-        sprintf(balanceMsg, "New account balance: %.2f", acc.balance);
+        sprintf(balanceMsg, "Your new account balance is: %.2f", acc.balance);
         printUI(balanceMsg, UIMiddle, UILeft);
     }
 

@@ -3,4 +3,4 @@ ID: 120938477778
 Account Number: 1002814
 Account Type: Current
 PIN: 7909
-Balance: 0.00
+Balance: 397.00

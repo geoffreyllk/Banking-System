@@ -29,10 +29,26 @@ struct Account {
 
 struct Account acc;
 
-// to clear input buffer after fgets number inputs or if input variable is small e.g. PIN1Input[10]
-void clearInputBuffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
+// Better input function that handles buffer clearing
+void getInput(const char* prompt, char* input, int inputSize) {
+    printf("%s", prompt);
+    
+    // read input
+    int i = 0;
+    char ch;
+    // loop while index is < input size - 1 (leave space for \0) and until user presses enter or End of File (EOF)
+    while (i < inputSize - 1 && (ch = getchar()) != '\n' && ch != EOF) {
+        // store character in input string array & move pointer to next index
+        input[i] = ch;
+        i++;
+    }
+    // append to input string array to terminate
+    input[i] = '\0';
+
+    // if input too long, clear input buffer (remaining chars) 
+    if (ch != '\n' && ch != EOF) {
+        while ((ch = getchar()) != '\n' && ch != EOF);
+    }
 }
 
 int countAccounts() {
@@ -101,11 +117,8 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         int accountFound = 1;
         // verify account number
         while (accountFound) {
-            printf("Enter your account number: ");
-            fgets(accNumInput, sizeof(accNumInput), stdin);
-            accNumInput[strcspn(accNumInput, "\n")] = 0;
+            getInput("Enter your account number: ", accNumInput, sizeof(accNumInput));
             accNum = atoi(accNumInput); // convert string to integer
-            clearInputBuffer();
 
             if (!isAccountNumberInIndex(accNum)) {
                 printf("Account number not found. Please try again.\n");
@@ -150,10 +163,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             last4IDs[4] = '\0';
             // verify id (compare idInput with last 4 char of ID)
             while (idFound) {
-                printf("Enter last 4 characters of your ID: ");
-                fgets(idInput, sizeof(idInput), stdin);
-                idInput[strcspn(idInput, "\n")] = 0;
-                clearInputBuffer();
+                getInput("Enter last 4 characters of your ID: ", idInput, sizeof(idInput));
 
                 // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
@@ -167,10 +177,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         // verify pin with 4 attempts
         int attemptsLeft = 4;
         while (attemptsLeft > 0) {
-            printf("Enter your 4-digit PIN: ");
-            fgets(pinInput, sizeof(pinInput), stdin);
-            pinInput[strcspn(pinInput, "\n")] = 0;
-            clearInputBuffer();
+            getInput("Enter your 4-digit PIN: ", pinInput, sizeof(pinInput));
 
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
@@ -204,16 +211,12 @@ void saveAccountNumber(int accountNumber) {
 
 void createAccount() {
     printf("\n=== Create New Account ===\n");
-    printf("Full name: ");
-    fgets(acc.name, sizeof(acc.name), stdin);
-    acc.name[strcspn(acc.name, "\n")] = 0;
+    getInput("Full name: ", acc.name, sizeof(acc.name));
 
     int valid = 0;
     // check if ID inputted is less than 13 char & is integers
     while (!valid) {
-        printf("Identification Number (ID): ");
-        fgets(acc.ID, sizeof(acc.ID), stdin);
-        acc.ID[strcspn(acc.ID, "\n")] = 0;
+        getInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID));
 
         valid = 1;
         int idLength = strlen(acc.ID);
@@ -235,9 +238,7 @@ void createAccount() {
     // validate 0 or 1 for account type
     while (running) {
         char typeInput[10];
-        printf("Account type (0 = savings, 1 = current): ");
-        fgets(typeInput, sizeof(typeInput), stdin);
-        typeInput[strcspn(typeInput, "\n")] = 0;
+        getInput("Account type (0 = savings, 1 = current): ", typeInput, sizeof(typeInput));
         
         if (strcmp(typeInput, "0") == 0) {
             strcpy(acc.type, "Savings");
@@ -254,10 +255,7 @@ void createAccount() {
     int pin1, pin2;
     char pin1Input[10], pin2Input[10];
     while (running) {
-        printf("Set 4-digit PIN: ");
-        fgets(pin1Input, sizeof(pin1Input), stdin);
-        pin1Input[strcspn(pin1Input, "\n")] = 0;
-        clearInputBuffer();
+        getInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input));
         if (sscanf(pin1Input, "%d", &pin1) != 1) {
             printf("Invalid input. Please enter digits only.\n");
             continue;
@@ -268,10 +266,7 @@ void createAccount() {
             continue;
         }
 
-        printf("Re-enter PIN to confirm: ");
-        fgets(pin2Input, sizeof(pin2Input), stdin);
-        pin2Input[strcspn(pin2Input, "\n")] = 0;
-        clearInputBuffer();
+        getInput("Re-enter PIN to confirm: ", pin2Input, sizeof(pin2Input));
         if (sscanf(pin2Input, "%d", &pin2) != 1) {
             printf("Invalid input. Please enter digits only.\n");
             continue;
@@ -354,84 +349,75 @@ void deleteAccount() {
 
     // confirm deletion
     if (verifyAccount(1, &accountNumber)) {
-        clearInputBuffer();
-
-        int running = 1;
-        while (running) {
-            char confirm[2];
-            printf("Are you sure you want to delete your account? (y/n): ");
-            fgets(confirm, sizeof(confirm), stdin);
-            confirm[strcspn(confirm, "\n")] = 0;
-
-            clearInputBuffer();
+        char confirm[2];
+        getInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm));
             
-            if (tolower(confirm[0]) == 'y') {
-                // create filename string of account number e.g. 'database/1234567.txt'
-                char filename[128];
-                sprintf(filename, "database/%d.txt", accountNumber);
+        if (tolower(confirm[0]) == 'y') {
+            // create filename string of account number e.g. 'database/1234567.txt'
+            char filename[128];
+            sprintf(filename, "database/%d.txt", accountNumber);
 
-                FILE *accFile;
-                accFile = fopen(filename, "r");
-                // check if account file exists, if not return not found
-                if (!accFile) {
-                    printf("Account not found.\n");
-                    return;
-                }
-                fclose(accFile);
-
-                if (remove(filename) == 0) {
-                    // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
-                    FILE *indexRead = fopen("database/index.txt", "r");
-                    // error check
-                    if (!indexRead) {
-                        printf("Error: Could not open index.txt for reading.\n");
-                        return;
-                    }
-
-                    FILE *indexTemp = fopen("database/temp_index.txt", "w");
-                    if (!indexTemp) {
-                        printf("Error: Could not create temporary index file.\n");
-                        fclose(indexRead);  // close indexFile too because its not null (from prev error check)
-                        return;
-                    }
-
-                    int number;
-                    while (fscanf(indexRead, "%d", &number) == 1) {
-                        // if NOT the account number to be deleted
-                        if (number != accountNumber) {
-                            // write to temporary file
-                            fprintf(indexTemp, "%d\n", number);
-                        }
-                    }
-
-                    fclose(indexRead);
-                    fclose(indexTemp);
-
-                    // remove current index.txt and replace with temp file with all accounts except the file to be deleted
-                    // validation checks
-                    if (remove("database/index.txt") != 0) {
-                        printf("Error: Could not remove old index file.\n");
-                        remove("database/temp_index.txt");
-                        return;
-                    }
-
-                    if (rename("database/temp_index.txt", "database/index.txt") != 0) {
-                        printf("Error: Could not rename temporary index file.\n");
-                        return;
-                    }
-                    
-                    printf("Account deleted successfully\n");
-                    return; 
-                } else {
-                    printf("Error deleting account.\n");
-                    return;
-                }
-            } else if (tolower(confirm[0]) == 'n') {
-                printf("Account deleted canceled.\n");
+            FILE *accFile;
+            accFile = fopen(filename, "r");
+            // check if account file exists, if not return not found
+            if (!accFile) {
+                printf("Account not found.\n");
                 return;
-            } else {
-                printf("Input error. Please input 'y' or 'n' to confirm deletion.\n");
             }
+            fclose(accFile);
+
+            if (remove(filename) == 0) {
+                // since cannot directly delete files in c, read all account numbers NOT to be deleted, and write them to a different temp file
+                FILE *indexRead = fopen("database/index.txt", "r");
+                // error check
+                if (!indexRead) {
+                    printf("Error: Could not open index.txt for reading.\n");
+                    return;
+                }
+
+                FILE *indexTemp = fopen("database/temp_index.txt", "w");
+                if (!indexTemp) {
+                    printf("Error: Could not create temporary index file.\n");
+                    fclose(indexRead);  // close indexFile too because its not null (from prev error check)
+                    return;
+                }
+
+                int number;
+                while (fscanf(indexRead, "%d", &number) == 1) {
+                    // if NOT the account number to be deleted
+                    if (number != accountNumber) {
+                        // write to temporary file
+                        fprintf(indexTemp, "%d\n", number);
+                    }
+                }
+
+                fclose(indexRead);
+                fclose(indexTemp);
+
+                // remove current index.txt and replace with temp file with all accounts except the file to be deleted
+                // validation checks
+                if (remove("database/index.txt") != 0) {
+                    printf("Error: Could not remove old index file.\n");
+                    remove("database/temp_index.txt");
+                    return;
+                }
+
+                if (rename("database/temp_index.txt", "database/index.txt") != 0) {
+                    printf("Error: Could not rename temporary index file.\n");
+                    return;
+                }
+                
+                printf("Account deleted successfully\n");
+                return; 
+            } else {
+                printf("Error deleting account.\n");
+                return;
+            }
+        } else if (tolower(confirm[0]) == 'n') {
+            printf("Account deleted canceled.\n");
+            return;
+        } else {
+            printf("Input error. Please input 'y' or 'n' to confirm deletion.\n");
         }
     }
 }
@@ -484,7 +470,7 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
             acc.balance += amount;
             printf("Deposit successful.\n");
         } else{
-            printf("Please input between RM0 and RM50,000 only\n");
+            printf("Please input between RM 0 and RM 50,000 only\n");
             fclose(accFile);
             return 0;
         }
@@ -531,7 +517,7 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
     // only show account balance if withdrawing money from own account (for deposit own account, show account balance locally)
     // so that receiever account balance is not shown when remitting
     if (operation == '-') {
-        printf("New account balance: %.2f\n", acc.balance);
+        printf("Your new account balance is: %.2f\n", acc.balance);
     }
 
     return 1;
@@ -544,14 +530,10 @@ void deposit() {
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
-    clearInputBuffer();
 
     char amountInput[10];
-    printf("How much would you like to deposit? ");
-    fgets(amountInput, sizeof(amountInput), stdin);
-    amountInput[strcspn(amountInput, "\n")] = 0; // finds position of \\n and replaces with \\0 to end string
+    getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput); // convert ascii to integer
-    clearInputBuffer();
 
     // if updateBalance successful (1) then print current balance
     if (updateBalance('+', amount, accountNumber, NULL)) {
@@ -567,7 +549,6 @@ void withdraw() {
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
-    clearInputBuffer();
 
     // get current account balance
     float currentBalance = getAccountBalance(accountNumber);
@@ -576,11 +557,8 @@ void withdraw() {
     }
     
     char amountInput[10];
-    printf("How much would you like to withdraw? ");
-    fgets(amountInput, sizeof(amountInput), stdin);
-    amountInput[strcspn(amountInput, "\n")] = 0;
+    getInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput);
-    clearInputBuffer();
     updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 }
 
@@ -589,14 +567,10 @@ void remittance() {
 
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
-    clearInputBuffer();
 
     char receiverInput[10];
-    printf("Enter recipient account number: ");
-    fgets(receiverInput, sizeof(receiverInput), stdin);
-    receiverInput[strcspn(receiverInput, "\n")] = 0;
+    getInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput));
     int receiverAccount = atoi(receiverInput);
-    clearInputBuffer();
     if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
 
     // get current account balance
@@ -606,11 +580,8 @@ void remittance() {
     }
 
     char amountInput[10];
-    printf("How much would you like to transfer? ");
-    fgets(amountInput, sizeof(amountInput), stdin);
-    amountInput[strcspn(amountInput, "\n")] = 0;
+    getInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput); // convert to int
-    clearInputBuffer();
 
     // get receiver type
     char filename[128];
@@ -651,14 +622,13 @@ int main() {
 
     logTransaction("Session Start");
     printf("\n=== Welcome to the official Bank System! ===\n");
+    printf("\nSession start: %s\n", timeStr);
+    printf("No. of Accounts Loaded: %d\n", countAccounts());
     char choice[20];
 
     int running = 1;
     while (running) {
-        printf("\nSession start: %s\n", timeStr);
-        printf("No. of Accounts Loaded: %d\n", countAccounts());
-        
-        printf("\nMain Menu\n");
+        printf("\n=== Main Menu ===\n");
         printf("Please choose the following (1-6):\n");
         printf("1. Create Account\n");
         printf("2. Delete Account\n");
@@ -667,10 +637,7 @@ int main() {
         printf("5. Remittance\n");
         printf("6. Exit\n");
 
-        printf("Select Option: ");
-        fgets(choice, sizeof(choice), stdin);
-        choice[strcspn(choice, "\n")] = 0;
-        clearInputBuffer();
+        getInput("Select Option: ", choice, sizeof(choice));
 
         // convert choice to lowercase
         int i = 0;

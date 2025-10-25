@@ -1,0 +1,6 @@
+Name: Bobby Fischer
+ID: 0010010119
+Account Number: 1015902
+Account Type: Savings
+PIN: 9999
+Balance: 3999.96
