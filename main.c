@@ -264,11 +264,11 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         float balance;
 
         fscanf(accFile, "Name: %[^\n]\n", storedName);
+        fscanf(accFile, "ID: %12s\n", storedID);
         fscanf(accFile, "Account Number: %d\n", &storedAccNum);
         fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
         fscanf(accFile, "PIN: %4s\n", storedPIN);
-        fscanf(accFile, "Balance: %f\n", &balance);
-        fscanf(accFile, "ID: %12s\n", storedID);
+        fscanf(accFile, "Balance: %f\n", &balance);        
 
         fclose(accFile);
 
@@ -562,7 +562,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
-            printEnd("Deposit successful.")
+            printEnd("Deposit successful.");
         } else{
             printRetry("Please input between RM0 and RM50,000 only");
             fclose(accFile);
