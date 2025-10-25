@@ -186,7 +186,7 @@ void printLoad(const char* text, int duration) {
     printUI(text, UIMiddle, UIRight);
     printUI("", UIBottom, UICenter);
     delay(duration);
-    // system("cls");
+    system("cls");
 }
 
 // --- v2 functions END ---
