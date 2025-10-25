@@ -166,13 +166,11 @@ void delay(int number_of_seconds)
 }
 
 // small helper to print loading texts in main e.g. 'Depositing...'
-void printLoad(const char* text) {
-    int seconds = 2; // set your duration for load
-
+void printLoad(const char* text, int duration) {
     printUI("-", UIBorder, UICenter);
     printUI(text, UIMiddle, UILeft);  
     printUI("", UIBottom, UICenter);    
-    delay(seconds);
+    delay(duration);
     system("cls");
 }
 
@@ -435,7 +433,7 @@ void createAccount() {
     fclose(accFile);
 
     printEnd("Account created successfully!");
-    printLoad("Going back to Main Menu...");  
+    printLoad("Going back to Main Menu...", 2);  
 }
 
 
@@ -534,7 +532,7 @@ void deleteAccount() {
         }
     }
 
-    printLoad("Going back to Main Menu...");  
+    printLoad("Going back to Main Menu...", 2);  
 }
 
 
@@ -629,7 +627,7 @@ void deposit() {
     int amount = atoi(amountInput);
     updateBalance('+', amount, accountNumber, NULL);
 
-    printLoad("Going back to Main Menu...");  
+    printLoad("Going back to Main Menu...", 4);  
 }
 
 void withdraw() {
@@ -644,7 +642,7 @@ void withdraw() {
     int amount = atoi(amountInput);
     updateBalance('-', amount, accountNumber, NULL);
 
-    printLoad("Going back to Main Menu...");  
+    printLoad("Going back to Main Menu...", 4);  
 }
 
 void remittance() {
@@ -688,7 +686,7 @@ void remittance() {
     updateBalance('-', amount, senderAccount, receiverType);
     updateBalance('+', amount, receiverAccount, NULL);
 
-    printLoad("Going back to Main Menu...");  
+    printLoad("Going back to Main Menu...", 4);  
 }
 
 int main() {
@@ -699,6 +697,7 @@ int main() {
     logTransaction("Session Start");
     printTitle("Welcome to the official Bank System!");
     char choice[20];
+    int loadDuration = 2;
 
     int running = 1;
     while (running) {
@@ -728,33 +727,33 @@ int main() {
 
         // get input of char choice, with print 'Select Option: '
         printInput("Select Option: ", choice, sizeof(choice)); 
-        printUI("-", UIBorder, UICenter); 
+        printUI("-", UIBorder, UICenter);        
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
-            printLoad("Creating account...");  
+            printLoad("Creating account...", loadDuration);  
             createAccount();
             logTransaction("Create account");
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
-            printLoad("Deleting account...");
+            printLoad("Deleting account...", loadDuration);
             deleteAccount();
             logTransaction("Delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
-            printLoad("Depositing...");
+            printLoad("Depositing...", loadDuration);
             deposit();
             logTransaction("Deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
-            printLoad("Withdrawing...");
+            printLoad("Withdrawing...", loadDuration);
             withdraw();
             logTransaction("Withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
-            printLoad("Remitting funds...");
+            printLoad("Remitting funds...", loadDuration);
             remittance();
             logTransaction("Remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
-            printLoad("Thank you for using our service. Please come again next time... BYE!");
+            printLoad("Thank you for using our service. Please come again next time... BYE!", 5);
             logTransaction("Session ended");
             break;
         } 
