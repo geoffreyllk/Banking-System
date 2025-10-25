@@ -558,7 +558,7 @@ float getAccountBalance(int accountNumber) {
 }
 
 // --- 3/4. Deposit / Withdraw ---
-void updateBalance(char operation,int amount, int accountNumber, const char *receiverType) {
+int updateBalance(char operation,int amount, int accountNumber, const char *receiverType) {
     char filename[128];
     sprintf(filename, "database/%d.txt", accountNumber);
 
@@ -585,7 +585,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         } else{
             printRetry("Please input between RM0 and RM50,000 only");
             fclose(accFile);
-            return;
+            return 0;
         }
     } else if (operation == '-') {
         // validate when remittance, percentage fee based on transfer accounts 
@@ -599,14 +599,14 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
                 printUI("Savings --> Current (2%% fee) or Current --> Savings (3%% fee).", UIMiddle, UILeft);
                 printUI("Same account type transfers are not permitted.", UIMiddle, UILeft);
                 fclose(accFile);
-                return;
+                return 0; // fail
             }
         }
         float totalAmount = amount + (amount * fee);
         if (totalAmount > acc.balance) {
             printEnd("Insufficient balance including remittance fee");
             fclose(accFile);
-            return;
+            return 0;
         }
 
         acc.balance -= totalAmount;
@@ -636,6 +636,8 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         sprintf(balanceMsg, "New account balance: %.2f", acc.balance);
         printUI(balanceMsg, UIMiddle, UILeft);
     }
+
+    return 1;
 }
 
 
@@ -649,14 +651,17 @@ void deposit() {
 
     char amountInput[10];
     printInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
-    int amount = atoi(amountInput);
+    int amount = atoi(amountInput); // convert ascii to integer
     updateBalance('+', amount, accountNumber, NULL);
 
-    float newBalance = getAccountBalance(accountNumber);
-    if (newBalance >= 0) {
-        char text[60];
-        sprintf(text, "Current Balance: RM%.2f", newBalance);
-        printUI(text, UIMiddle, UILeft);
+    // if updateBalance successful (1) then print current balance
+    if (updateBalance('+', amount, accountNumber, NULL)) {
+        float newBalance = getAccountBalance(accountNumber);
+        if (newBalance >= 0) {
+            char text[60];
+            sprintf(text, "Current Balance: RM%.2f", newBalance);
+            printUI(text, UIMiddle, UILeft);
+        }
     }
 
     printLoad("Going back to Main Menu...", 4);  
@@ -681,7 +686,7 @@ void withdraw() {
     char amountInput[10];
     printInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput);
-    updateBalance('-', amount, accountNumber, NULL);
+    updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 
     printLoad("Going back to Main Menu...", 4);  
 }
@@ -709,7 +714,7 @@ void remittance() {
 
     char amountInput[10];
     printInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
-    int amount = atoi(amountInput);
+    int amount = atoi(amountInput); // convert to int
 
     // get receiver type
     char filename[128];
@@ -733,8 +738,13 @@ void remittance() {
     }
     fclose(file);
 
-    updateBalance('-', amount, senderAccount, receiverType);
-    updateBalance('+', amount, receiverAccount, NULL);
+    if (updateBalance('-', amount, senderAccount, receiverType)) {
+        // only update receiver account if sender account was successful updated
+        updateBalance('+', amount, receiverAccount, NULL);
+        printUI("Transfer completed successfully!", UIMiddle, UICenter);
+    } else {
+        printUI("Transfer failed. No changes were made.", UIMiddle, UILeft);
+    }
 
     printLoad("Going back to Main Menu...", 4);  
 }
