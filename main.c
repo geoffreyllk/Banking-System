@@ -535,6 +535,27 @@ void deleteAccount() {
     printLoad("Going back to Main Menu...", 2);  
 }
 
+// getAccountBalance for withdraw and remittance
+float getAccountBalance(int accountNumber) {
+    char filename[128];
+    sprintf(filename, "database/%d.txt", accountNumber);
+    
+    FILE *accFile = fopen(filename, "r");
+    if (!accFile) return -1;
+
+    char line[256];
+    float balance = -1;
+    
+    while (fgets(line, sizeof(line), accFile)) {
+        if (strstr(line, "Balance:") != NULL) {
+            sscanf(line, "Balance: %f", &balance);
+            break;
+        }
+    }
+    
+    fclose(accFile);
+    return balance;
+}
 
 // --- 3/4. Deposit / Withdraw ---
 void updateBalance(char operation,int amount, int accountNumber, const char *receiverType) {
@@ -636,6 +657,15 @@ void withdraw() {
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+
+    // get current account balance
+    float currentBalance = getAccountBalance(accountNumber);
+    if (currentBalance >= 0) {
+        char balanceMsg[60];
+        sprintf(balanceMsg, "Current Balance: RM%.2f", currentBalance);
+        printUI(balanceMsg, UIMiddle, UILeft);
+        printUI("-", UIBorder, UICenter);
+    }
     
     char amountInput[10];
     printInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
@@ -656,6 +686,15 @@ void remittance() {
     printInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput));
     int receiverAccount = atoi(receiverInput);
     if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
+
+    // get current account balance
+    float currentBalance = getAccountBalance(senderAccount);
+    if (currentBalance >= 0) {
+        char balanceMsg[60];
+        sprintf(balanceMsg, "Your current balance is: RM%.2f", currentBalance);
+        printUI(balanceMsg, UIMiddle, UILeft);
+        printUI("-", UIBorder, UICenter);
+    }
 
     char amountInput[10];
     printInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
