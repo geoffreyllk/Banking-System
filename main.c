@@ -113,6 +113,15 @@ void printInput(const char* prompt, char* input, int inputSize) {
     }
     // append to input string array to terminate
     input[i] = '\0';
+
+    // if input too long, clear input buffer (remaining chars) 
+    if (ch != '\n' && ch != EOF) {
+        ch = getchar();
+        // read until enter key or EOF, so console reads everything properly *no remaining input keys
+        while (ch != '\n' && ch != EOF) {
+            ch = getchar();
+        }
+    }
 }
 
 // print a title outside the UI with no '| |' borders
@@ -135,6 +144,36 @@ void printTitle(const char* title) {
         printf("=");
     }
     printf("\n");
+}
+
+// for text retry e.g. Input error. Please retry again.
+void printRetry(const char* text) {
+    printUI(text, UIMiddle, UILeft);
+    printUI("-", UIBorder, UICenter);
+}
+
+// for text before printLoad e.g. Transfer Successful
+void printEnd(const char* text) {
+    printUI("-", UIBorder, UICenter);
+    printUI(text, UIMiddle, UILeft);
+}
+// time delay
+void delay(int number_of_seconds)
+{	
+	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
+	clock_t start_time = clock();	
+	while (clock() < start_time + milli_seconds); // looping until not time
+}
+
+// small helper to print loading texts in main e.g. 'Depositing...'
+void printLoad(const char* text) {
+    int seconds = 2; // set your duration for load
+
+    printUI("-", UIBorder, UICenter);
+    printUI(text, UIMiddle, UILeft);  
+    printUI("", UIBottom, UICenter);    
+    delay(seconds);
+    system("cls");
 }
 
 int countAccounts() {
@@ -247,7 +286,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 
                 // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
-                    printUI("Incorrect ID. Try again.", UIMiddle, UILeft);
+                    printEnd("Incorrect ID. Try again.");
                 } else {
                     idFound = 0;
                 }
@@ -266,12 +305,12 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             } else {
                 attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
                 if (attemptsLeft == 0) {
-                    printUI("You have run out of attempts. Returning to main menu.", UIMiddle, UILeft);
+                    printEnd("You have run out of attempts.");
                     return 0;
                 } else {
                     char attemptsMsg[50];
                     sprintf(attemptsMsg, "Incorrect PIN. You have: %d attempts left.", attemptsLeft);
-                    printUI(attemptsMsg, UIMiddle, UILeft);
+                    printRetry(attemptsMsg);
                 }
             }
         }
@@ -279,16 +318,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
     return 0;
 }
 
-// time delay
-void delay(int number_of_seconds)
-{	
-	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
-	clock_t start_time = clock();	
-	while (clock() < start_time + milli_seconds); // looping until not time
-}
-
 // --- 1. create account functions ---
-
 void saveAccountNumber(int accountNumber) {
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "a");
@@ -301,8 +331,8 @@ void saveAccountNumber(int accountNumber) {
 }
 
 void createAccount() {
+    printTitle("Create New Account");
     printUI("", UITop, UICenter);
-    printUI("Please fill in the following", UIMiddle, UILeft);
     printInput("Full name: ", acc.name, sizeof(acc.name));
 
     int valid = 0;
@@ -404,7 +434,8 @@ void createAccount() {
 
     fclose(accFile);
 
-    printUI("Account created successfully!", UIMiddle, UICenter);
+    printEnd("Account created successfully!");
+    printLoad("Going back to Main Menu...");  
 }
 
 
@@ -426,8 +457,11 @@ void getAccounts() {
 }
 
 void deleteAccount() {
+    printTitle("Delete Account");
+    printUI("", UITop, UICenter);
     // print all account numbers in database
     getAccounts();
+    printUI("", UIBottom, UICenter);
 
     int accountNumber;
 
@@ -485,7 +519,7 @@ void deleteAccount() {
                     remove("database/index.txt");
                     rename("database/temp_index.txt", "database/index.txt");
                     
-                    printUI("Account deleted successfully.", UIMiddle, UICenter);
+                    printEnd("Account deleted successfully");
                     return; 
                 } else {
                     printUI("Error deleting account.", UIMiddle, UILeft);
@@ -499,6 +533,8 @@ void deleteAccount() {
             }
         }
     }
+
+    printLoad("Going back to Main Menu...");  
 }
 
 
@@ -526,9 +562,9 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
-            printUI("Deposit successful.", UIMiddle, UILeft);
+            printEnd("Deposit successful.")
         } else{
-            printUI("Please input between RM0 and RM50,000 only.", UIMiddle, UILeft);
+            printRetry("Please input between RM0 and RM50,000 only");
             fclose(accFile);
             return;
         }
@@ -540,7 +576,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
             } else if (strcmp(acc.type, "Current") == 0 && strcmp(receiverType, "Savings") == 0) {
                 fee = 0.03; // 3% fee
             } else {
-                printUI("Transfer error. Transfers only allowed between different account types.", UIMiddle, UILeft);
+                printRetry("Transfer error. Transfers only allowed between different account types.");
                 printUI("Savings → Current (2% fee) or Current → Savings (3% fee).", UIMiddle, UILeft);
                 printUI("Same account type transfers are not permitted.", UIMiddle, UILeft);
                 fclose(accFile);
@@ -549,7 +585,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
         }
         float totalAmount = amount + (amount * fee);
         if (totalAmount > acc.balance) {
-            printUI("Insufficient balance including remittance fee.", UIMiddle, UILeft);
+            printEnd("Insufficient balance including remittance fee");
             fclose(accFile);
             return;
         }
@@ -560,7 +596,7 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
             sprintf(feeMsg, "A remittance fee of %.2f%% has been applied.", fee * 100);
             printUI(feeMsg, UIMiddle, UILeft);
         }
-        printUI("Withdrawal/Transfer successful.", UIMiddle, UILeft);
+        printEnd("Withdrawal/Transfer successful.");
     }
 
     // Go back to start of file and rewrite
@@ -576,12 +612,15 @@ void updateBalance(char operation,int amount, int accountNumber, const char *rec
 
     char balanceMsg[50];
     sprintf(balanceMsg, "New balance: %.2f", acc.balance);
-    printUI(balanceMsg, UIMiddle, UILeft);
+    printEnd(balanceMsg);
 }
 
 
 // --- 3,4,5. Deposit, Withdraw, Remittance (using updateBalance) ---
 void deposit() {
+    printTitle("Deposit Amount");
+    printUI("", UITop, UICenter);
+
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
 
@@ -589,9 +628,14 @@ void deposit() {
     printInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput);
     updateBalance('+', amount, accountNumber, NULL);
+
+    printLoad("Going back to Main Menu...");  
 }
 
 void withdraw() {
+    printTitle("Withdraw Amount");
+    printUI("", UITop, UICenter);
+
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
     
@@ -599,9 +643,14 @@ void withdraw() {
     printInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
     int amount = atoi(amountInput);
     updateBalance('-', amount, accountNumber, NULL);
+
+    printLoad("Going back to Main Menu...");  
 }
 
 void remittance() {
+    printTitle("Transfer Amount");
+    printUI("", UITop, UICenter);
+
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
 
@@ -639,15 +688,7 @@ void remittance() {
     updateBalance('-', amount, senderAccount, receiverType);
     updateBalance('+', amount, receiverAccount, NULL);
 
-    printUI("Transfer Successful!", UIMiddle, UICenter);
-}
-
-// small helper to print loading texts in main e.g. 'Depositing...'
-void printLoad(const char* text) {
-    printUI(text, UIMiddle, UILeft);  
-    printUI("", UIBottom, UICenter);
-    delay(2);
-    system("cls");
+    printLoad("Going back to Main Menu...");  
 }
 
 int main() {
@@ -657,24 +698,25 @@ int main() {
 
     logTransaction("Session Start");
     printTitle("Welcome to the official Bank System!");
-    printUI("", UITop, UICenter);
-    printUI("Main Menu", UIMiddle, UICenter);  
-    printUI("", UIMiddle, UICenter);  
-    
-    char sessionText[100];
-    sprintf(sessionText, "Session start: %s", timeStr);
-    printUI(sessionText, UIMiddle, UILeft);
-    
-    char accountsText[50];
-    sprintf(accountsText, "No. Accounts Loaded: %d", countAccounts());
-    printUI(accountsText, UIMiddle, UILeft);
-    
-    printUI("-", UIBorder, UICenter);
-    printUI("", UIMiddle, UICenter);  
     char choice[20];
 
     int running = 1;
     while (running) {
+        printUI("", UITop, UICenter);
+        printUI("Main Menu", UIMiddle, UICenter);  
+        printUI("", UIMiddle, UICenter);  
+        
+        char sessionText[100];
+        sprintf(sessionText, "Session start: %s", timeStr);
+        printUI(sessionText, UIMiddle, UILeft);
+        
+        char accountsText[50];
+        sprintf(accountsText, "No. Accounts Loaded: %d", countAccounts());
+        printUI(accountsText, UIMiddle, UILeft);
+        
+        printUI("-", UIBorder, UICenter);
+        printUI("", UIMiddle, UICenter);
+        
         printUI("Please choose the following (1-6): ", UIMiddle, UILeft);  
         printUI("1. Create Account", UIMiddle, UILeft);  
         printUI("2. Delete Account", UIMiddle, UILeft);  
