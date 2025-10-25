@@ -445,7 +445,7 @@ float getAccountBalance(int accountNumber) {
 }
 
 // --- 3/4. Deposit / Withdraw ---
-int updateBalance(char operation,int amount, int accountNumber, const char *receiverType) {
+int updateBalance(char operation, float amount, int accountNumber, const char *receiverType) {
     char filename[128];
     sprintf(filename, "database/%d.txt", accountNumber);
 
@@ -533,7 +533,7 @@ void deposit() {
 
     char amountInput[10];
     getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
-    int amount = atoi(amountInput); // convert ascii to integer
+    float amount = atoi(amountInput); // convert ascii to float
 
     // if updateBalance successful (1) then print current balance
     if (updateBalance('+', amount, accountNumber, NULL)) {
@@ -558,7 +558,7 @@ void withdraw() {
     
     char amountInput[10];
     getInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
-    int amount = atoi(amountInput);
+    float amount = atoi(amountInput);
     updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 }
 
@@ -581,7 +581,7 @@ void remittance() {
 
     char amountInput[10];
     getInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
-    int amount = atoi(amountInput); // convert to int
+    float amount = atoi(amountInput); // convert to float
 
     // get receiver type
     char filename[128];
