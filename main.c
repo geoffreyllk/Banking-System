@@ -33,10 +33,9 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
         // '____________________'
         // '|                  |'
         case UITop:
-            printf(" ");
             // print seperator
             for (int i = 0; i < UIWidth; i++) printf("_");
-            printf(" \n");
+            printf("\n");
             printf("|");
             for (int i = 0; i < UIWidth - 2; i++) printf(" "); // padding excluding borders '| |'
             printf("|\n");
@@ -146,20 +145,26 @@ void printTitle(const char* title) {
     printf("\n");
 }
 
+// default all borders as '_' and since all borders are '_' need nextline spacing
+void printBorder() {
+    printUI("_", UIBorder, UICenter);
+    printUI("", UIMiddle, UICenter);
+}
+
 // for text retry e.g. Input error. Please retry again.
 void printRetry(const char* text) {
     printUI(text, UIMiddle, UILeft);
-    printUI("-", UIBorder, UICenter);
+    printBorder();
 }
 
 // for text before printLoad e.g. Transfer Successful
 void printEnd(const char* text) {
-    printUI("-", UIBorder, UICenter);
+    printBorder();
     printUI(text, UIMiddle, UILeft);
 }
+
 // time delay
-void delay(int number_of_seconds)
-{	
+void delay(int number_of_seconds) {	
 	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
 	clock_t start_time = clock();	
 	while (clock() < start_time + milli_seconds); // looping until not time
@@ -167,9 +172,9 @@ void delay(int number_of_seconds)
 
 // small helper to print loading texts in main e.g. 'Depositing...'
 void printLoad(const char* text, int duration) {
-    printUI("-", UIBorder, UICenter);
-    printUI(text, UIMiddle, UILeft);  
-    printUI("", UIBottom, UICenter);    
+    printBorder();
+    printUI(text, UIMiddle, UIRight);
+    printUI("", UIBottom, UICenter);
     delay(duration);
     // system("cls");
 }
@@ -439,19 +444,29 @@ void createAccount() {
 
 // --- 2. delete functions ---
 void getAccounts() {
+    // get number of accounts loaded
+    char accountsText[50];
+    sprintf(accountsText, "No. of Accounts Loaded: %d", countAccounts());
+
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "r");
     if (indexFile == NULL) {
-        printUI("Error: couldn’t open index file to retrieve account numbers.", UIMiddle, UILeft);
+        printUI("Error: couldn’t open index file to retrieve account numbers.", UIMiddle, UICenter);
         return;
     }
-    printUI("Saved Accounts:", UIMiddle, UILeft);
+    
+    printUI("[  Saved Accounts List  ]", UIMiddle, UICenter);
     char line[128];
     while (fgets(line, sizeof(line), indexFile) != NULL) {
         line[strcspn(line, "\n")] = 0;
-        printUI(line, UIMiddle, UILeft);
+        printUI(line, UIMiddle, UICenter);
     }
     fclose(indexFile);
+
+    // print number of accounts loaded
+    printUI(accountsText, UIMiddle, UICenter);
+    printUI("", UIMiddle, UICenter);
+    printUI("`", UIBorder, UICenter);
 }
 
 void deleteAccount() {
@@ -459,7 +474,6 @@ void deleteAccount() {
     printUI("", UITop, UICenter);
     // print all account numbers in database
     getAccounts();
-    printUI("", UIBottom, UICenter);
 
     int accountNumber;
 
@@ -480,6 +494,7 @@ void deleteAccount() {
                 // check if account file exists, if not return not found
                 if (!accFile) {
                     printUI("Account not found.", UIMiddle, UILeft);
+                    printLoad("Going back to Main Menu...", 2);
                     return;
                 }
                 fclose(accFile);
@@ -490,14 +505,16 @@ void deleteAccount() {
                     FILE *indexRead = fopen("database/index.txt", "r");
                     // error check
                     if (!indexRead) {
-                        printUI("Error: Could not open index.txt for reading.", UIMiddle, UILeft);
+                        printEnd("Error: Could not open index.txt for reading.");
+                        printLoad("Going back to Main Menu...", 2);
                         return;
                     }
 
                     FILE *indexTemp = fopen("database/temp_index.txt", "w");
                     if (!indexTemp) {
-                        printUI("Error: Could not create temporary index file.", UIMiddle, UILeft);
+                        printEnd("Error: Could not create temporary index file.");
                         fclose(indexRead);  // close indexFile too because its not null (from prev error check)
+                        printLoad("Going back to Main Menu...", 2);
                         return;
                     }
 
@@ -518,21 +535,26 @@ void deleteAccount() {
                     rename("database/temp_index.txt", "database/index.txt");
                     
                     printEnd("Account deleted successfully");
+                    printLoad("Going back to Main Menu...", 2);
                     return; 
                 } else {
-                    printUI("Error deleting account.", UIMiddle, UILeft);
+                    printEnd("Error deleting account.");
+                    printLoad("Going back to Main Menu...", 2);
                     return;
                 }
             } else if (confirm[0] == 'n' || confirm[0] == 'N') {
-                printUI("Account deletion canceled.", UIMiddle, UICenter);
+                printEnd("Account deleted canceled.");
+                printLoad("Going back to Main Menu...", 2);
                 return;
             } else {
                 printUI("Input error. Please input 'y' or 'n' to confirm deletion.", UIMiddle, UILeft);
+                printBorder();
             }
         }
     }
 
-    printLoad("Going back to Main Menu...", 2);  
+    // fallback just in case
+    printLoad("Going back to Main Menu...", 2);
 }
 
 // getAccountBalance for withdraw and remittance
@@ -565,7 +587,7 @@ int updateBalance(char operation,int amount, int accountNumber, const char *rece
     FILE *accFile = fopen(filename, "r+"); // read and write to file
     if (!accFile) {
         printUI("Account not found.", UIMiddle, UILeft);
-        return;
+        return 0;
     }
 
     // read file
@@ -680,7 +702,7 @@ void withdraw() {
         char balanceMsg[60];
         sprintf(balanceMsg, "Current Balance: RM%.2f", currentBalance);
         printUI(balanceMsg, UIMiddle, UILeft);
-        printUI("-", UIBorder, UICenter);
+        printBorder();
     }
     
     char amountInput[10];
@@ -709,7 +731,7 @@ void remittance() {
         char balanceMsg[60];
         sprintf(balanceMsg, "Your current balance is: RM%.2f", currentBalance);
         printUI(balanceMsg, UIMiddle, UILeft);
-        printUI("-", UIBorder, UICenter);
+        printBorder();
     }
 
     char amountInput[10];
@@ -770,11 +792,10 @@ int main() {
         printUI(sessionText, UIMiddle, UILeft);
         
         char accountsText[50];
-        sprintf(accountsText, "No. Accounts Loaded: %d", countAccounts());
+        sprintf(accountsText, "No. of Accounts Loaded: %d", countAccounts());
         printUI(accountsText, UIMiddle, UILeft);
         
-        printUI("-", UIBorder, UICenter);
-        printUI("", UIMiddle, UICenter);
+        printBorder();
         
         printUI("Please choose the following (1-6): ", UIMiddle, UILeft);  
         printUI("1. Create Account", UIMiddle, UILeft);  
@@ -783,7 +804,8 @@ int main() {
         printUI("4. Withdraw", UIMiddle, UILeft);  
         printUI("5. Remittance", UIMiddle, UILeft);  
         printUI("6. Exit", UIMiddle, UILeft);
-        printUI("-", UIBorder, UICenter);
+        
+        printBorder();
 
         // get input of char choice, with print 'Select Option: '
         printInput("Select Option: ", choice, sizeof(choice));
@@ -818,6 +840,7 @@ int main() {
         } 
         else {
             printUI("Invalid choice. Please try again.", UIMiddle, UILeft);
+            printLoad("Reloading...", 2);
         }
     }
 
