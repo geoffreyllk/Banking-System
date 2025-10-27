@@ -286,20 +286,28 @@ void createAccount() {
     }
 
     // verify password via double entry
-    int pin1, pin2;
     char pin1Input[10], pin2Input[10];
-    while (running) {
+    int validPIN = 0;
+    while (!validPIN) {
         if (getInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input))) {
             return;
         }
 
-        if (sscanf(pin1Input, "%d", &pin1) != 1) {
-            printf("Invalid input. Please enter digits only.\n");
+        if (strlen(pin1Input) != 4) {
+            printf("Invalid PIN. Must be 4 digits.\n");
             continue;
         }
 
-        if (pin1 < 1000 || pin1 > 9999) {
-            printf("Invalid PIN. Must be 4 digits.\n");
+        int allDigits = 1;
+        for (int i = 0; i < 4; i++) {
+            if (!isdigit(pin1Input[i])) {
+                allDigits = 0;
+                break;
+            }
+        }
+        
+        if (!allDigits) {
+            printf("Invalid input. Only digits 0-9 allowed.\n");
             continue;
         }
 
@@ -307,19 +315,14 @@ void createAccount() {
             return;
         }
 
-        if (sscanf(pin2Input, "%d", &pin2) != 1) {
-            printf("Invalid input. Please enter digits only.\n");
-            continue;
-        }
-
-        if (pin1 == pin2) {
-            sprintf(acc.pin, "%04d", pin1);
-            break;
+        if (strcmp(pin1Input, pin2Input) == 0) {
+            sprintf(acc.pin, pin1Input);
+            validPIN = 1;
         } else {
             printf("PINs do not match. Please try again.\n");
         }
     }
-
+    
     // account balance (default 0)
     acc.balance = 0.0;
 

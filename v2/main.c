@@ -433,20 +433,28 @@ void createAccount() {
     }
 
     // verify password via double entry
-    int pin1, pin2;
     char pin1Input[10], pin2Input[10];
-    while (running) {
+    int validPIN = 0;
+    while (!validPIN) {
         if (printInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input))) {
             return;
         }
 
-        if (sscanf(pin1Input, "%d", &pin1) != 1) {
-            printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
+        if (strlen(pin1Input) != 4) {
+            printUI("Invalid PIN. Must be 4 digits.", UIMiddle, UILeft);
             continue;
         }
 
-        if (pin1 < 1000 || pin1 > 9999) {
-            printUI("Invalid PIN. Must be 4 digits.", UIMiddle, UILeft);
+        int allDigits = 1;
+        for (int i = 0; i < 4; i++) {
+            if (!isdigit(pin1Input[i])) {
+                allDigits = 0;
+                break;
+            }
+        }
+        
+        if (!allDigits) {
+            printUI("Invalid PIN. Only digits 0-9 allowed.", UIMiddle, UILeft);
             continue;
         }
 
@@ -454,16 +462,11 @@ void createAccount() {
             return;
         }
 
-        if (sscanf(pin2Input, "%d", &pin2) != 1) {
-            printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
-            continue;
-        }
-
-        if (pin1 == pin2) {
-            sprintf(acc.pin, "%04d", pin1);
-            break;
+        if (strcmp(pin1Input, pin2Input) == 0) {
+            sprintf(acc.pin, pin1Input);
+            validPIN = 1;
         } else {
-            printUI("PINs do not match. Please try again.", UIMiddle, UILeft);
+            printEnd("PINs do not match. Please try again.");
         }
     }
 
