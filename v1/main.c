@@ -51,6 +51,15 @@ void getInput(const char* prompt, char* input, int inputSize) {
     }
 }
 
+// convert a string into lowercase ( > 1 char)
+void toLowerString(char* string) {
+    int i = 0;
+    while (string[i] != '\0') {
+        string[i] = tolower(string[i]);  // turn each character into lowercase
+        i++;
+    }
+}
+
 // exit to menu by pressing 'q' or 'Q'
 int exitToMenu(const char* input) {
     if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0) {
@@ -267,10 +276,12 @@ void createAccount() {
             return;
         }
 
-        if (strcmp(typeInput, "0") == 0) {
+        // convert to lowercase first
+        toLowerString(typeInput);
+        if (strcmp(typeInput, "0") == 0 || strcmp(typeInput, "savings") == 0) {
             strcpy(acc.type, "Savings");
             break;
-        } else if (strcmp(typeInput, "1") == 0) {
+        } else if (strcmp(typeInput, "1") == 0 || strcmp(typeInput, "current") == 0) {
             strcpy(acc.type, "Current");
             break;
         } else {
@@ -682,11 +693,7 @@ int main() {
         }
 
         // convert choice to lowercase
-        int i = 0;
-        while (choice[i] != '\0') {
-            choice[i] = tolower(choice[i]);  // turn each character into lowercase
-            i++;
-        }
+        toLowerString(choice);
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             createAccount();
