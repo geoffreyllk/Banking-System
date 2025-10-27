@@ -535,7 +535,7 @@ void deposit() {
 
     char amountInput[10];
     getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
-    float amount = atoi(amountInput); // convert ascii to float
+    float amount = atof(amountInput); // convert ascii to float
 
     // if updateBalance successful (1) then print current balance
     if (updateBalance('+', amount, accountNumber, NULL)) {
@@ -561,7 +561,7 @@ void withdraw() {
     
     char amountInput[10];
     getInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
-    float amount = atoi(amountInput);
+    float amount = atof(amountInput);
     updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 }
 
@@ -585,7 +585,7 @@ void remittance() {
 
     char amountInput[10];
     getInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
-    float amount = atoi(amountInput); // convert to float
+    float amount = atof(amountInput); // convert to float
 
     // get receiver type
     char filename[128];
