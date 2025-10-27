@@ -182,6 +182,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
                 *returnAccountNumber = accNum; // if pins are same (correct), return account number for use
+                printf("Account verified: %d", storedAccNum);
                 return 1;
             } else {
                 attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
@@ -527,6 +528,7 @@ int updateBalance(char operation, float amount, int accountNumber, const char *r
 // --- 3,4,5. Deposit, Withdraw, Remittance (using updateBalance) ---
 void deposit() {
     printf("\n=== Deposit Amount ===\n");
+    getAccounts();
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
@@ -546,6 +548,7 @@ void deposit() {
 
 void withdraw() {
     printf("\n=== Withdraw Amount ===\n");
+    getAccounts();
 
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
@@ -564,6 +567,7 @@ void withdraw() {
 
 void remittance() {
     printf("\n=== Transfer Amount ===\n");
+    getAccounts();
 
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return

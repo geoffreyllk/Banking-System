@@ -1,0 +1,6 @@
+Name: jji
+ID: 67890987654
+Account Number: 1006091
+Account Type: Savings
+PIN: 1234
+Balance: 0.00

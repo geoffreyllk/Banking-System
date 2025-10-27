@@ -323,6 +323,9 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
                 *returnAccountNumber = accNum; // if pins are same (correct), return account number for use
+                char msg[50];
+                sprintf(msg, "Account verified: %d", storedAccNum);
+                printRetry(msg); // print retry for the border bottom
                 return 1;
             } else {
                 attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
@@ -700,6 +703,8 @@ void deposit() {
     printTitle("Deposit Amount");
     printUI("", UITop, UICenter);
 
+    getAccounts();
+
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
 
@@ -724,6 +729,8 @@ void withdraw() {
     printTitle("Withdraw Amount");
     printUI("", UITop, UICenter);
 
+    getAccounts();
+
     int accountNumber;
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
 
@@ -747,6 +754,8 @@ void withdraw() {
 void remittance() {
     printTitle("Transfer Amount");
     printUI("", UITop, UICenter);
+
+    getAccounts();
 
     int senderAccount;
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
