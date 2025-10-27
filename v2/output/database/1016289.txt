@@ -1,0 +1,6 @@
+Name: oiu
+ID: 10929839
+Account Number: 1016289
+Account Type: Savings
+PIN: 1234
+Balance: 0.00

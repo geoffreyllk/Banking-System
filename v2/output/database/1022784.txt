@@ -1,0 +1,6 @@
+Name: michael chan
+ID: 129873628
+Account Number: 1022784
+Account Type: Savings
+PIN: 8181
+Balance: 0.00

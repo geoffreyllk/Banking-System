@@ -316,7 +316,7 @@ void createAccount() {
         }
 
         if (strcmp(pin1Input, pin2Input) == 0) {
-            sprintf(acc.pin, pin1Input);
+            strcpy(acc.pin, pin1Input);
             validPIN = 1;
         } else {
             printf("PINs do not match. Please try again.\n");
@@ -359,6 +359,25 @@ void createAccount() {
     fclose(accFile);
 
     printf("Account created successfully!\n");
+    printf("Your account number is: %d", acc.accountNumber);
+
+    char accNumInput[13];
+    int verified = 0;
+    while (!verified) {
+        if (getInput("To return to Main Menu, re-enter your account number: ", accNumInput, sizeof(accNumInput))) {
+            return; // if user presses 'q' force exit
+        }
+
+        char accNumStr[13];
+        sprintf(accNumStr, "%d", acc.accountNumber); // convert generated account number to string for compare
+
+        // compare input and stored account numbers as string (not int)
+        if (strcmp(accNumInput, accNumStr) == 0) {
+            verified = 1;
+        } else {
+            printf("Account number is incorrect. Please try again.");
+        }
+    }
     char logs[50];
     sprintf(logs, "Created account: %d", acc.accountNumber);
     logTransaction(logs);

@@ -1,0 +1,6 @@
+Name: jackson wang
+ID: 0000999200
+Account Number: 1022604
+Account Type: Current
+PIN: 0987
+Balance: 0.00
