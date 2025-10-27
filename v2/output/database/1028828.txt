@@ -1,0 +1,6 @@
+Name: null
+ID: 013453678920
+Account Number: 1028828
+Account Type: Savings
+PIN: 1234
+Balance: 300.00

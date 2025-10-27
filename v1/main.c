@@ -21,7 +21,7 @@ Description:
 struct Account {
     char name[100];
     char ID[13];
-    int accountNumber;
+    char accountNumber[13];
     char type[10];
     char pin[5];
     float balance;
@@ -74,9 +74,10 @@ int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
 
-    int count = 0, number;
+    int count = 0;
+    char number[13];
     while (1) {
-        int result = fscanf(indexFile, "%d", &number);
+        int result = fscanf(indexFile, "%12s", number);
         if (result != 1) {
             break; // when no more numbers exit
         }
@@ -104,17 +105,18 @@ void logTransaction(const char *message) {
 }
 
 // check if account number exists in index.txt
-int isAccountNumberInIndex(int accNum) {
+int isAccountNumberInIndex(const char* accNum) {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) {
         printf("Error: couldn't open index file.\n");
         return 0;
     }
 
-    int number;
+    char number[13];
     int found = 0;
-    while (fscanf(indexFile, "%d", &number) == 1) {
-        if (number == accNum) {
+    while (fscanf(indexFile, "%12s", number) == 1) {
+        // compare account numbers as string
+        if (strcmp(number, accNum) == 0) {
             found = 1;
             break;
         }
@@ -125,11 +127,10 @@ int isAccountNumberInIndex(int accNum) {
 }
 
 // verifyAccount function for delete(requireID), deposit, withdraw and remittance(account to be transferred, no ID or PIN required)
-int verifyAccount(int requireID, int *returnAccountNumber) {
+int verifyAccount(int requireID, char* returnAccountNumber) {
     int running = 1;
     while (running) {
-        char accNumInput[10];
-        int accNum;
+        char accNumInput[13];
         char pinInput[5];
         char idInput[5];
 
@@ -139,19 +140,18 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             if (getInput("Enter your account number: ", accNumInput, sizeof(accNumInput))){
                 return 0;
             }
-            accNum = atoi(accNumInput); // convert string to integer
 
-            if (!isAccountNumberInIndex(accNum)) {
+            if (!isAccountNumberInIndex(accNumInput)) {
                 printf("Account number not found. Please try again.\n");
             } else {
                 accountFound = 0;
-                *returnAccountNumber = accNum;  // store converted integer
+                strcpy(returnAccountNumber, accNumInput);
             }
         }
 
         // get data of account number inputted from file to compare
         char filename[128];
-        sprintf(filename, "database/%d.txt", accNum); // format account number for file directory
+        sprintf(filename, "database/%s.txt", accNumInput); // format account number for file directory
 
         FILE *accFile;
         accFile = fopen(filename, "r");
@@ -161,14 +161,14 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         }
 
         char storedName[100], storedPIN[5], storedID[13], typeStr[20];
-        int storedAccNum;
+        char storedAccNum[13];
         float balance;
 
         // read and store account data
-        fscanf(accFile, "Name: %[^\n]\n", storedName); // long string %[^\n] reads until newline
+        fscanf(accFile, "Name: %[^\n]\n", storedName);
         fscanf(accFile, "ID: %12s\n", storedID);
-        fscanf(accFile, "Account Number: %d\n", &storedAccNum);
-        fscanf(accFile, "Account Type: %[^\n]\n", typeStr); // long string %[^\n] reads until newline
+        fscanf(accFile, "Account Number: %12s\n", storedAccNum);
+        fscanf(accFile, "Account Type: %[^\n]\n", typeStr);
         fscanf(accFile, "PIN: %4s\n", storedPIN);
         fscanf(accFile, "Balance: %f\n", &balance);
 
@@ -206,8 +206,8 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
-                *returnAccountNumber = accNum; // if pins are same (correct), return account number for use
-                printf("Account verified: %d", storedAccNum);
+                strcpy(returnAccountNumber, accNumInput); // copy account number input
+                printf("Account verified: %s", storedAccNum);
                 return 1;
             } else {
                 attemptsLeft--; // if pins are not same (wrong), decrement attempt and exit if no more attempts left
@@ -224,14 +224,14 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
 }
 
 // --- 1. create account functions ---
-void saveAccountNumber(int accountNumber) {
+void saveAccountNumber(const char* accountNumber) {
     FILE *indexFile;
     indexFile = fopen("database/index.txt", "a");
     if (indexFile == NULL) {
         printf("Error: couldn't open index file.\n");
         return;
     }
-    fprintf(indexFile, "%d\n", accountNumber);
+    fprintf(indexFile, "%s\n", accountNumber);
     fclose(indexFile);
 }
 
@@ -326,21 +326,25 @@ void createAccount() {
     // account balance (default 0)
     acc.balance = 0.0;
 
-    // generate random account number
+    // generate random account number as int, then convert to string
     srand(time(NULL));
-    int accountNumber;
+    int accountNumberInt;
+    char tempAccNum[13];
     do {
         int min = 1000000; // 7 digits
         int max = 999999999; // 9 digits
-        accountNumber = min + rand() % (max + 1 - min);;
-    } while (isAccountNumberInIndex(accountNumber)); // keep generating a random number until it is not in index.txt
+        accountNumberInt = min + rand() % (max + 1 - min);
+        // convert to string
+        sprintf(tempAccNum, "%d", accountNumberInt);
+    } while (isAccountNumberInIndex(tempAccNum));
 
-    acc.accountNumber = accountNumber;
-    saveAccountNumber(accountNumber);
+    // store as string
+    sprintf(acc.accountNumber, "%d", accountNumberInt);
+    saveAccountNumber(acc.accountNumber); // append to accountNumber to index.txt
 
     // create filename based on account number
     char filename[100];
-    sprintf(filename, "database/%d.txt", acc.accountNumber); // format to account number in file directory
+    sprintf(filename, "database/%s.txt", acc.accountNumber); // format to account number in file directory
 
     FILE *accFile = fopen(filename, "w");
     if (accFile == NULL) {
@@ -351,7 +355,7 @@ void createAccount() {
     // write account info to file
     fprintf(accFile, "Name: %s\n", acc.name);
     fprintf(accFile, "ID: %s\n", acc.ID);
-    fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
+    fprintf(accFile, "Account Number: %s\n", acc.accountNumber);  // Write as string
     fprintf(accFile, "Account Type: %s\n", acc.type);
     fprintf(accFile, "PIN: %s\n", acc.pin);
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
@@ -359,27 +363,24 @@ void createAccount() {
     fclose(accFile);
 
     printf("Account created successfully!\n");
-    printf("Your account number is: %d", acc.accountNumber);
+    printf("Your account number is: %s", acc.accountNumber);
 
     char accNumInput[13];
     int verified = 0;
     while (!verified) {
-        if (getInput("To return to Main Menu, re-enter your account number: ", accNumInput, sizeof(accNumInput))) {
+        if (getInput("\nTo return to Main Menu, re-enter your account number: ", accNumInput, sizeof(accNumInput))) {
             return; // if user presses 'q' force exit
         }
 
-        char accNumStr[13];
-        sprintf(accNumStr, "%d", acc.accountNumber); // convert generated account number to string for compare
-
-        // compare input and stored account numbers as string (not int)
-        if (strcmp(accNumInput, accNumStr) == 0) {
+        // compare input and stored account numbers as string
+        if (strcmp(accNumInput, acc.accountNumber) == 0) {
             verified = 1;
         } else {
-            printf("Account number is incorrect. Please try again.");
+            printf("Account number is incorrect. Please try again.\n");
         }
     }
     char logs[50];
-    sprintf(logs, "Created account: %d", acc.accountNumber);
+    sprintf(logs, "Created account: %s", acc.accountNumber);
     logTransaction(logs);
 }
 
@@ -410,10 +411,10 @@ void deleteAccount() {
     // print all account numbers in database
     getAccounts();
 
-    int accountNumber;
+    char accountNumber[13];  // Changed to char[]
 
     // confirm deletion
-    if (verifyAccount(1, &accountNumber)) {
+    if (verifyAccount(1, accountNumber)) {
         char confirm[2];
         if (getInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm))) {
             return;
@@ -422,7 +423,7 @@ void deleteAccount() {
         if (tolower(confirm[0]) == 'y') {
             // create filename string of account number e.g. 'database/1234567.txt'
             char filename[128];
-            sprintf(filename, "database/%d.txt", accountNumber);
+            sprintf(filename, "database/%s.txt", accountNumber);  // Use string
 
             FILE *accFile;
             accFile = fopen(filename, "r");
@@ -449,12 +450,12 @@ void deleteAccount() {
                     return;
                 }
 
-                int number;
-                while (fscanf(indexRead, "%d", &number) == 1) {
+                char number[13];
+                while (fscanf(indexRead, "%12s", number) == 1) {  // Read as string
                     // if NOT the account number to be deleted
-                    if (number != accountNumber) {
+                    if (strcmp(number, accountNumber) != 0) {  // Compare strings
                         // write to temporary file
-                        fprintf(indexTemp, "%d\n", number);
+                        fprintf(indexTemp, "%s\n", number);
                     }
                 }
 
@@ -476,7 +477,7 @@ void deleteAccount() {
                 
                 printf("Account deleted successfully\n");
                 char logs[50];
-                sprintf(logs, "Deleted account: %d", accountNumber);
+                sprintf(logs, "Deleted account: %s", accountNumber);
                 logTransaction(logs);
                 return; 
             } else {
@@ -493,10 +494,9 @@ void deleteAccount() {
 }
 
 // getAccountBalance for withdraw and remittance
-float getAccountBalance(int accountNumber) {
+float getAccountBalance(const char* accountNumber) {
     char filename[128];
-    sprintf(filename, "database/%d.txt", accountNumber);
-    
+    sprintf(filename, "database/%s.txt", accountNumber); 
     FILE *accFile = fopen(filename, "r");
     if (!accFile) return -1;
 
@@ -515,9 +515,9 @@ float getAccountBalance(int accountNumber) {
 }
 
 // --- 3/4. Deposit / Withdraw ---
-int updateBalance(char operation, float amount, int accountNumber, const char *receiverType) {
+int updateBalance(char operation, float amount, const char* accountNumber, const char *receiverType) {
     char filename[128];
-    sprintf(filename, "database/%d.txt", accountNumber);
+    sprintf(filename, "database/%s.txt", accountNumber);
 
     FILE *accFile = fopen(filename, "r+"); // read and write to file
     if (!accFile) {
@@ -528,7 +528,7 @@ int updateBalance(char operation, float amount, int accountNumber, const char *r
     // read file
     fscanf(accFile, "Name: %[^\n]\n", acc.name);
     fscanf(accFile, "ID: %12s\n", acc.ID);
-    fscanf(accFile, "Account Number: %d\n", &acc.accountNumber);
+    fscanf(accFile, "Account Number: %12s\n", acc.accountNumber);  // Read as string
     fscanf(accFile, "Account Type: %[^\n]\n", acc.type);
     fscanf(accFile, "PIN: %4s\n", acc.pin);
     fscanf(accFile, "Balance: %f\n", &acc.balance);
@@ -578,7 +578,7 @@ int updateBalance(char operation, float amount, int accountNumber, const char *r
     // rewrite accFile info with new balance
     fprintf(accFile, "Name: %s\n", acc.name);
     fprintf(accFile, "ID: %s\n", acc.ID);
-    fprintf(accFile, "Account Number: %d\n", acc.accountNumber);
+    fprintf(accFile, "Account Number: %s\n", acc.accountNumber);
     fprintf(accFile, "Account Type: %s\n", acc.type);
     fprintf(accFile, "PIN: %s\n", acc.pin);
     fprintf(accFile, "Balance: %.2f\n", acc.balance);
@@ -599,8 +599,8 @@ void deposit() {
     printf("\n=== Deposit Amount ===\n");
     getAccounts();
 
-    int accountNumber;
-    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    char accountNumber[13];
+    if (!verifyAccount(0, accountNumber)) return; // if pin is wrong, return
 
     char amountInput[10];
     if (getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput))) {
@@ -614,7 +614,7 @@ void deposit() {
         if (newBalance >= 0) {
             printf("Current Balance: RM%.2f\n", newBalance);
             char logs[50];
-            sprintf(logs, "Deposited into account: %d", accountNumber);
+            sprintf(logs, "Deposited into account: %s", accountNumber);
             logTransaction(logs);
         }
     }
@@ -624,8 +624,8 @@ void withdraw() {
     printf("\n=== Withdraw Amount ===\n");
     getAccounts();
 
-    int accountNumber;
-    if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
+    char accountNumber[13];
+    if (!verifyAccount(0, accountNumber)) return; // if pin is wrong, return
 
     // get current account balance
     float currentBalance = getAccountBalance(accountNumber);
@@ -643,7 +643,7 @@ void withdraw() {
         if (newBalance >= 0) {
             printf("Current Balance: RM%.2f", newBalance);
             char logs[50];
-            sprintf(logs, "Withdrew from account: %d", accountNumber);
+            sprintf(logs, "Withdrew from account: %s", accountNumber);
             logTransaction(logs);
         }
     }
@@ -653,15 +653,14 @@ void remittance() {
     printf("\n=== Transfer Amount ===\n");
     getAccounts();
 
-    int senderAccount;
-    if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
+    char senderAccount[13];
+    if (!verifyAccount(0, senderAccount)) return; // if pin is wrong, return
 
-    char receiverInput[10];
+    char receiverInput[13];
     if (getInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput))) {
         return;
     }
-    int receiverAccount = atoi(receiverInput);
-    if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
+    if (!isAccountNumberInIndex(receiverInput)) return; // only need verify account number, not pin or ID
 
     // get current account balance
     float currentBalance = getAccountBalance(senderAccount);
@@ -679,7 +678,7 @@ void remittance() {
     char filename[128];
     char receiverType[10];
 
-    sprintf(filename, "database/%d.txt", receiverAccount);
+    sprintf(filename, "database/%s.txt", receiverInput);
     FILE *file; 
     file = fopen(filename, "r");
     if (!file) {
@@ -700,10 +699,10 @@ void remittance() {
     // validate updateBalance and pass receiverType to compare with senderType for remittance fee
     if (updateBalance('-', amount, senderAccount, receiverType)) {
         // only update receiver account if sender account was successful updated
-        if (updateBalance('+', amount, receiverAccount, NULL)) {
+        if (updateBalance('+', amount, receiverInput, NULL)) {
             printf("Transfer completed successfully!\n");
             char logs[50];
-            sprintf(logs, "Transfer from account: %d to %d", senderAccount, receiverAccount);
+            sprintf(logs, "Transfer from account: %s to %s", senderAccount, receiverInput);
             logTransaction(logs);
         }
     } else {

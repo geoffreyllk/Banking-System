@@ -3,4 +3,4 @@ ID: 098765432
 Account Number: 1023602
 Account Type: Current
 PIN: 1818
-Balance: 8300.00
+Balance: 7991.00
