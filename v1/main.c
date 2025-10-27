@@ -356,6 +356,9 @@ void createAccount() {
     fclose(accFile);
 
     printf("Account created successfully!\n");
+    char logs[50];
+    sprintf(logs, "Created account: %d", acc.accountNumber);
+    logTransaction(logs);
 }
 
 
@@ -450,6 +453,9 @@ void deleteAccount() {
                 }
                 
                 printf("Account deleted successfully\n");
+                char logs[50];
+                sprintf(logs, "Deleted account: %d", accountNumber);
+                logTransaction(logs);
                 return; 
             } else {
                 printf("Error deleting account.\n");
@@ -585,6 +591,9 @@ void deposit() {
         float newBalance = getAccountBalance(accountNumber);
         if (newBalance >= 0) {
             printf("Current Balance: RM%.2f\n", newBalance);
+            char logs[50];
+            sprintf(logs, "Deposited into account: %d", accountNumber);
+            logTransaction(logs);
         }
     }
 }
@@ -607,7 +616,15 @@ void withdraw() {
         return;
     }
     float amount = atof(amountInput);
-    updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
+    if (updateBalance('-', amount, accountNumber, NULL)) { // update balance and print new acc balance
+        float newBalance = getAccountBalance(accountNumber);
+        if (newBalance >= 0) {
+            printf("Current Balance: RM%.2f", newBalance);
+            char logs[50];
+            sprintf(logs, "Withdrew from account: %d", accountNumber);
+            logTransaction(logs);
+        }
+    }
 }
 
 void remittance() {
@@ -661,8 +678,12 @@ void remittance() {
     // validate updateBalance and pass receiverType to compare with senderType for remittance fee
     if (updateBalance('-', amount, senderAccount, receiverType)) {
         // only update receiver account if sender account was successful updated
-        updateBalance('+', amount, receiverAccount, NULL);
-        printf("Transfer completed successfully!\n");
+        if (updateBalance('+', amount, receiverAccount, NULL)) {
+            printf("Transfer completed successfully!\n");
+            char logs[50];
+            sprintf(logs, "Transfer from account: %d to %d", senderAccount, receiverAccount);
+            logTransaction(logs);
+        }
     } else {
         printf("Transfer failed. No changes were made.\n");
     }
@@ -691,9 +712,8 @@ int main() {
         printf("6. Exit\n");
         printf("Tip: Press 'q' to exit and return to main menu.\n");
 
-        getInput("Select Option: ", choice, sizeof(choice));
-        if (exitToMenu(choice)) {
-            continue; // restart menu
+        if (getInput("Select Option: ", choice, sizeof(choice))) {
+            continue;
         }
 
         // convert choice to lowercase
@@ -701,28 +721,22 @@ int main() {
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             createAccount();
-            logTransaction("Create account");
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
             deleteAccount();
-            logTransaction("Delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
             deposit();
-            logTransaction("Deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
             withdraw();
-            logTransaction("Withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
             remittance();
-            logTransaction("Remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
             printf("Thank you for using our service. Please come again next time... BYE!\n");
             logTransaction("Session ended");
             break;
-        } 
-        else {
+        } else {
             printf("Invalid choice. Please try again.\n");
         }
     }

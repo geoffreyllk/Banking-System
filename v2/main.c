@@ -503,7 +503,10 @@ void createAccount() {
     fclose(accFile);
 
     printEnd("Account created successfully!");
-    printLoad("Going back to Main Menu...", 2);  
+    printLoad("Going back to Main Menu...", 2);
+    char logs[50];
+    sprintf(logs, "Created account: %d", acc.accountNumber);
+    logTransaction(logs);
 }
 
 
@@ -613,6 +616,9 @@ void deleteAccount() {
                     
                     printEnd("Account deleted successfully");
                     printLoad("Going back to Main Menu...", 2);
+                    char logs[50];
+                    sprintf(logs, "Deleted account: %d", accountNumber);
+                    logTransaction(logs);
                     return; 
                 } else {
                     printEnd("Error deleting account.");
@@ -763,6 +769,9 @@ void deposit() {
             char text[60];
             sprintf(text, "Current Balance: RM%.2f", newBalance);
             printUI(text, UIMiddle, UILeft);
+            char logs[50];
+            sprintf(logs, "Deposited into account: %d", accountNumber);
+            logTransaction(logs);
         }
     }
 
@@ -792,7 +801,17 @@ void withdraw() {
         return;
     }
     float amount = atof(amountInput);
-    updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
+    if (updateBalance('-', amount, accountNumber, NULL)) { // update balance and print new acc balance
+        float newBalance = getAccountBalance(accountNumber);
+        if (newBalance >= 0) {
+            char text[60];
+            sprintf(text, "Current Balance: RM%.2f", newBalance);
+            printUI(text, UIMiddle, UILeft);
+            char logs[50];
+            sprintf(logs, "Withdrew from account: %d", accountNumber);
+            logTransaction(logs);
+        }
+    }
 
     printLoad("Going back to Main Menu...", 4);  
 }
@@ -853,8 +872,12 @@ void remittance() {
     // validate updateBalance and pass receiverType to compare with senderType for remittance fee
     if (updateBalance('-', amount, senderAccount, receiverType)) {
         // only update receiver account if sender account was successful updated
-        updateBalance('+', amount, receiverAccount, NULL);
-        printUI("Transfer completed successfully!", UIMiddle, UICenter);
+        if (updateBalance('+', amount, receiverAccount, NULL)) {
+            printUI("Transfer completed successfully!", UIMiddle, UICenter);
+            char logs[50];
+            sprintf(logs, "Transfer from account: %d to %d", senderAccount, receiverAccount);
+            logTransaction(logs);
+        }
     } else {
         printUI("Transfer failed. No changes were made.", UIMiddle, UILeft);
     }
@@ -900,10 +923,8 @@ int main() {
         printBorder();
 
         // get input of char choice, with print 'Select Option: '
-        printInput("Select Option: ", choice, sizeof(choice));
-        if (exitToMenu(choice)) {
-            printLoad("Reloading...", 2); // restart menu
-            continue; 
+        if (printInput("Select Option: ", choice, sizeof(choice))) {
+            continue;
         }
 
         // convert choice to lowercase
@@ -912,32 +933,26 @@ int main() {
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             printLoad("Creating account...", loadDuration);  
             createAccount();
-            logTransaction("Create account");
         } 
         else if (strcmp(choice, "2") == 0 || strcmp(choice, "delete") == 0) {
             printLoad("Deleting account...", loadDuration);
             deleteAccount();
-            logTransaction("Delete account");
         } 
         else if (strcmp(choice, "3") == 0 || strcmp(choice, "deposit") == 0) {
             printLoad("Depositing...", loadDuration);
             deposit();
-            logTransaction("Deposit");
         } 
         else if (strcmp(choice, "4") == 0 || strcmp(choice, "withdraw") == 0) {
             printLoad("Withdrawing...", loadDuration);
             withdraw();
-            logTransaction("Withdrawal");
         } else if (strcmp(choice, "5") == 0 || strcmp(choice, "remittance") == 0) {
             printLoad("Remitting funds...", loadDuration);
             remittance();
-            logTransaction("Remittance");
         } else if (strcmp(choice, "6") == 0 || strcmp(choice, "exit") == 0) {
             printLoad("Thank you for using our service. Please come again next time... BYE!", 5);
             logTransaction("Session ended");
             break;
-        } 
-        else {
+        } else {
             printUI("Invalid choice. Please try again.", UIMiddle, UILeft);
             printLoad("Reloading...", 2);
         }
