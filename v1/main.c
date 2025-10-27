@@ -29,8 +29,16 @@ struct Account {
 
 struct Account acc;
 
+// exit to menu by pressing 'q' or 'Q'
+int exitToMenu(const char* input) {
+    if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 // Better input function that handles buffer clearing
-void getInput(const char* prompt, char* input, int inputSize) {
+int getInput(const char* prompt, char* input, int inputSize) {
     printf("%s", prompt);
     
     // read input
@@ -49,6 +57,8 @@ void getInput(const char* prompt, char* input, int inputSize) {
     if (ch != '\n' && ch != EOF) {
         while ((ch = getchar()) != '\n' && ch != EOF);
     }
+
+    return exitToMenu(input);
 }
 
 // convert a string into lowercase ( > 1 char)
@@ -58,14 +68,6 @@ void toLowerString(char* string) {
         string[i] = tolower(string[i]);  // turn each character into lowercase
         i++;
     }
-}
-
-// exit to menu by pressing 'q' or 'Q'
-int exitToMenu(const char* input) {
-    if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0) {
-        return 1;
-    }
-    return 0;
 }
 
 int countAccounts() {
@@ -134,8 +136,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         int accountFound = 1;
         // verify account number
         while (accountFound) {
-            getInput("Enter your account number: ", accNumInput, sizeof(accNumInput));
-            if (exitToMenu(accNumInput)) {
+            if (getInput("Enter your account number: ", accNumInput, sizeof(accNumInput))){
                 return 0;
             }
             accNum = atoi(accNumInput); // convert string to integer
@@ -183,8 +184,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             last4IDs[4] = '\0';
             // verify id (compare idInput with last 4 char of ID)
             while (idFound) {
-                getInput("Enter last 4 characters of your ID: ", idInput, sizeof(idInput));
-                if (exitToMenu(idInput)) {
+                if (getInput("Enter last 4 characters of your ID: ", idInput, sizeof(idInput))) {
                     return 0;
                 }
 
@@ -200,8 +200,7 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         // verify pin with 4 attempts
         int attemptsLeft = 4;
         while (attemptsLeft > 0) {
-            getInput("Enter your 4-digit PIN: ", pinInput, sizeof(pinInput));
-            if (exitToMenu(pinInput)) {
+            if (getInput("Enter your 4-digit PIN: ", pinInput, sizeof(pinInput))) {
                 return 0;
             }
 
@@ -238,16 +237,14 @@ void saveAccountNumber(int accountNumber) {
 
 void createAccount() {
     printf("\n=== Create New Account ===\n");
-    getInput("Full name: ", acc.name, sizeof(acc.name));
-    if (exitToMenu(acc.name)) {
+    if (getInput("Full name: ", acc.name, sizeof(acc.name))) {
         return;
     }
 
     int valid = 0;
     // check if ID inputted is less than 13 char & is integers
     while (!valid) {
-        getInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID));
-        if (exitToMenu(acc.ID)) {
+        if (getInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID))) {
             return;
         }
 
@@ -271,8 +268,7 @@ void createAccount() {
     // validate 0 or 1 for account type
     while (running) {
         char typeInput[10];
-        getInput("Account type (0 = savings, 1 = current): ", typeInput, sizeof(typeInput));
-        if (exitToMenu(typeInput)) {
+        if (getInput("Account type (0 = savings, 1 = current): ", typeInput, sizeof(typeInput))) {
             return;
         }
 
@@ -293,8 +289,7 @@ void createAccount() {
     int pin1, pin2;
     char pin1Input[10], pin2Input[10];
     while (running) {
-        getInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input));
-        if (exitToMenu(pin1Input)) {
+        if (getInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input))) {
             return;
         }
 
@@ -308,8 +303,7 @@ void createAccount() {
             continue;
         }
 
-        getInput("Re-enter PIN to confirm: ", pin2Input, sizeof(pin2Input));
-        if (exitToMenu(pin2Input)) {
+        if (getInput("Re-enter PIN to confirm: ", pin2Input, sizeof(pin2Input))) {
             return;
         }
 
@@ -396,7 +390,9 @@ void deleteAccount() {
     // confirm deletion
     if (verifyAccount(1, &accountNumber)) {
         char confirm[2];
-        getInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm));
+        if (getInput("Are you sure you want to delete your account? (y/n): ", confirm, sizeof(confirm))) {
+            return;
+        }
             
         if (tolower(confirm[0]) == 'y') {
             // create filename string of account number e.g. 'database/1234567.txt'
@@ -579,7 +575,9 @@ void deposit() {
     if (!verifyAccount(0, &accountNumber)) return; // if pin is wrong, return
 
     char amountInput[10];
-    getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput));
+    if (getInput("How much would you like to deposit? ", amountInput, sizeof(amountInput))) {
+        return;
+    }
     float amount = atof(amountInput); // convert ascii to float
 
     // if updateBalance successful (1) then print current balance
@@ -605,7 +603,9 @@ void withdraw() {
     }
     
     char amountInput[10];
-    getInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput));
+    if (getInput("How much would you like to withdraw? ", amountInput, sizeof(amountInput))) {
+        return;
+    }
     float amount = atof(amountInput);
     updateBalance('-', amount, accountNumber, NULL); // update balance and print new acc balance
 }
@@ -618,7 +618,9 @@ void remittance() {
     if (!verifyAccount(0, &senderAccount)) return; // if pin is wrong, return
 
     char receiverInput[10];
-    getInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput));
+    if (getInput("Enter recipient account number: ", receiverInput, sizeof(receiverInput))) {
+        return;
+    }
     int receiverAccount = atoi(receiverInput);
     if (!isAccountNumberInIndex(receiverAccount)) return; // only need verify account number, not pin or ID
 
@@ -629,7 +631,9 @@ void remittance() {
     }
 
     char amountInput[10];
-    getInput("How much would you like to transfer? ", amountInput, sizeof(amountInput));
+    if (getInput("How much would you like to transfer? ", amountInput, sizeof(amountInput))) {
+        return;
+    }
     float amount = atof(amountInput); // convert to float
 
     // get receiver type
