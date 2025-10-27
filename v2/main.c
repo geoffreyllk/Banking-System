@@ -192,6 +192,15 @@ void printLoad(const char* text, int duration) {
 // --- v2 functions END ---
 
 
+// exit to menu by pressing 'q' or 'Q'
+int exitToMenu(const char* input) {
+    if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0) {
+        printLoad("Going back to Main Menu...", 2);
+        return 1;
+    }
+    return 0;
+}
+
 int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
@@ -259,6 +268,9 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         // verify account number
         while (accountFound) {
             printInput("Enter your account number: ", accNumInput, sizeof(accNumInput));
+            if (exitToMenu(accNumInput)) {
+                return 0;
+            }
             accNum = atoi(accNumInput); // convert string to integer
 
             if (!isAccountNumberInIndex(accNum)) {
@@ -305,6 +317,9 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
             // verify id (compare idInput with last 4 char of ID)
             while (idFound) {
                 printInput("Enter last 4 characters of your ID: ", idInput, sizeof(idInput));
+                if (exitToMenu(idInput)) {
+                    return 0;
+                }
 
                 // compare strings
                 if (strcmp(idInput, last4IDs) != 0) {
@@ -319,6 +334,9 @@ int verifyAccount(int requireID, int *returnAccountNumber) {
         int attemptsLeft = 4;
         while (attemptsLeft > 0) {
             printInput("Enter your 4-digit PIN: ", pinInput, sizeof(pinInput));
+            if (exitToMenu(pinInput)) {
+                return 0;
+            }
 
             // compare pin inputted with stored pin
             if (strcmp(pinInput, storedPIN) == 0) {
@@ -359,11 +377,17 @@ void createAccount() {
     printTitle("Create New Account");
     printUI("", UITop, UICenter);
     printInput("Full name: ", acc.name, sizeof(acc.name));
+    if (exitToMenu(acc.name)) {
+        return;
+    }
 
     int valid = 0;
     // check if ID inputted is less than 13 char & is integers
     while (!valid) {
         printInput("Identification Number (ID): ", acc.ID, sizeof(acc.ID));
+        if (exitToMenu(acc.ID)) {
+            return;
+        }
 
         valid = 1;
         int idLength = strlen(acc.ID);
@@ -386,6 +410,9 @@ void createAccount() {
     while (running) {
         char typeInput[10];
         printInput("Account type (0 = savings, 1 = current): ", typeInput, sizeof(typeInput));
+        if (exitToMenu(typeInput)) {
+            return;
+        }
 
         if (strcmp(typeInput, "0") == 0) {
             strcpy(acc.type, "Savings");
@@ -403,6 +430,10 @@ void createAccount() {
     char pin1Input[10], pin2Input[10];
     while (running) {
         printInput("Set 4-digit PIN: ", pin1Input, sizeof(pin1Input));
+        if (exitToMenu(pin1Input)) {
+            return;
+        }
+
         if (sscanf(pin1Input, "%d", &pin1) != 1) {
             printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
             continue;
@@ -414,6 +445,10 @@ void createAccount() {
         }
 
         printInput("Re-enter PIN to confirm: ", pin2Input, sizeof(pin2Input));
+        if (exitToMenu(pin2Input)) {
+            return;
+        }
+
         if (sscanf(pin2Input, "%d", &pin2) != 1) {
             printUI("Invalid input. Please enter digits only.", UIMiddle, UILeft);
             continue;
@@ -845,11 +880,16 @@ int main() {
         printUI("4. Withdraw", UIMiddle, UILeft);  
         printUI("5. Remittance", UIMiddle, UILeft);  
         printUI("6. Exit", UIMiddle, UILeft);
+        printUI("Tip: Press 'q' to exit and return to main menu.", UIMiddle, UILeft);
         
         printBorder();
 
         // get input of char choice, with print 'Select Option: '
         printInput("Select Option: ", choice, sizeof(choice));
+        if (exitToMenu(choice)) {
+            printLoad("Reloading...", 2); // restart menu
+            continue; 
+        }
 
         // convert choice to lowercase
         int i = 0;
