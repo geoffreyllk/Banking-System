@@ -201,6 +201,25 @@ void printTitle(const char* title) {
     printf("\n");
 }
 
+// return to menu after function end
+int returnToMainMenu() {
+    char confirm[2];
+    if (printInput("Return back to Main Menu? (y/n): ", confirm, sizeof(confirm))) {
+        return 1; // if user press 'q' force return
+    }
+    
+    if (tolower(confirm[0]) == 'y') {
+        printLoad("Going back to Main Menu...", 2);
+        return 1;
+    } else if (tolower(confirm[0]) == 'n') {
+        return 0;
+    } else {
+        printEnd("Invalid input. Please enter 'y' or 'n'.");
+        printLoad("Starting over...", 2);
+        return returnToMainMenu(); // recursive call
+    }
+}
+
 // --- v2 functions END ---
 
 // convert a string into lowercase ( > 1 char)
@@ -551,8 +570,11 @@ void getAccounts() {
     printUI("[  Saved Accounts List  ]", UIMiddle, UICenter);
     char line[128];
     while (fgets(line, sizeof(line), indexFile) != NULL) {
-        line[strcspn(line, "\n")] = 0;
-        printUI(line, UIMiddle, UICenter);
+        line[strcspn(line, "\n")] = 0; // replace newline '\n' with '\0'
+
+        char text[50];
+        sprintf(text, "- %s -",line);
+        printUI(text, UIMiddle, UICenter);
     }
     fclose(indexFile);
 
@@ -661,7 +683,7 @@ void deleteAccount() {
         }
     }
 
-    // fallback just in case
+    // fallback
     printLoad("Going back to Main Menu...", 2);
 }
 
@@ -800,7 +822,11 @@ void deposit() {
         }
     }
 
-    printLoad("Going back to Main Menu...", 4);  
+    if (returnToMainMenu()) {
+        return;
+    } else {
+        deposit();
+    }
 }
 
 void withdraw() {
@@ -838,7 +864,11 @@ void withdraw() {
         }
     }
 
-    printLoad("Going back to Main Menu...", 4);  
+    if (returnToMainMenu()) {
+        return;
+    } else {
+        withdraw();
+    }
 }
 
 void remittance() {
@@ -906,7 +936,11 @@ void remittance() {
         printUI("Transfer failed. No changes were made.", UIMiddle, UILeft);
     }
 
-    printLoad("Going back to Main Menu...", 4);  
+    if (returnToMainMenu()) {
+        return;
+    } else {
+        remittance();
+    }
 }
 
 int main() {

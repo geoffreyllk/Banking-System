@@ -3,4 +3,4 @@ ID: 01293845
 Account Number: 1015583
 Account Type: Savings
 PIN: 1200
-Balance: 0.00
+Balance: 600.00
