@@ -99,6 +99,41 @@ void printUI(const char* text, UIPositionY posY, UIPositionX posX) {
     }
 }
 
+
+// default all borders as '_' and since all borders are '_' need nextline spacing
+void printBorder() {
+    printUI("_", UIBorder, UICenter);
+    printUI("", UIMiddle, UICenter);
+}
+
+// for text retry e.g. Input error. Please retry again.
+void printRetry(const char* text) {
+    printUI(text, UIMiddle, UILeft);
+    printBorder();
+}
+
+// for text before printLoad e.g. Transfer Successful
+void printEnd(const char* text) {
+    printBorder();
+    printUI(text, UIMiddle, UILeft);
+}
+
+// time delay
+void delay(int number_of_seconds) {	
+	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
+	clock_t start_time = clock();	
+	while (clock() < start_time + milli_seconds); // looping until not time
+}
+
+// small helper to print loading texts in main e.g. 'Depositing...'
+void printLoad(const char* text, int duration) {
+    printBorder();
+    printUI(text, UIMiddle, UIRight);
+    printUI("", UIBottom, UICenter);
+    delay(duration);
+    system("cls");
+}
+
 // exit to menu by pressing 'q' or 'Q'
 int exitToMenu(const char* input) {
     if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0) {
@@ -164,40 +199,6 @@ void printTitle(const char* title) {
         printf("=");
     }
     printf("\n");
-}
-
-// default all borders as '_' and since all borders are '_' need nextline spacing
-void printBorder() {
-    printUI("_", UIBorder, UICenter);
-    printUI("", UIMiddle, UICenter);
-}
-
-// for text retry e.g. Input error. Please retry again.
-void printRetry(const char* text) {
-    printUI(text, UIMiddle, UILeft);
-    printBorder();
-}
-
-// for text before printLoad e.g. Transfer Successful
-void printEnd(const char* text) {
-    printBorder();
-    printUI(text, UIMiddle, UILeft);
-}
-
-// time delay
-void delay(int number_of_seconds) {	
-	int milli_seconds = 1000 * number_of_seconds; // convert seconds to milliseconds
-	clock_t start_time = clock();	
-	while (clock() < start_time + milli_seconds); // looping until not time
-}
-
-// small helper to print loading texts in main e.g. 'Depositing...'
-void printLoad(const char* text, int duration) {
-    printBorder();
-    printUI(text, UIMiddle, UIRight);
-    printUI("", UIBottom, UICenter);
-    delay(duration);
-    system("cls");
 }
 
 // --- v2 functions END ---
