@@ -1,0 +1,6 @@
+Name: sandy
+ID: 120394857
+Account Number: 1028348
+Account Type: Current
+PIN: 1234
+Balance: 0.00

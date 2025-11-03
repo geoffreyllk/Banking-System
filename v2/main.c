@@ -212,6 +212,7 @@ int returnToMainMenu() {
         printLoad("Going back to Main Menu...", 2);
         return 1;
     } else if (tolower(confirm[0]) == 'n') {
+        printLoad("Starting over...", 2);
         return 0;
     } else {
         printEnd("Invalid input. Please enter 'y' or 'n'.");
@@ -527,11 +528,29 @@ void createAccount() {
 
     fclose(accFile);
 
-    printEnd("Account created successfully!");
-    char text[50];
-    sprintf(text, "Your account number is: %s", acc.accountNumber);
-    printUI(text, UIMiddle, UILeft);
+    printLoad("Creating Account...", 2);
+    char logs[50];
+    sprintf(logs, "Creating Account...");
+    logTransaction(logs);
 
+    printTitle("Create New Account");
+    printUI("", UITop, UICenter);
+    printUI("Account created successfully!", UIMiddle, UIMiddle);
+    char text[50];
+    sprintf(text, "Name: %s", acc.name);
+    printUI(text, UIMiddle, UILeft);
+    sprintf(text, "ID: %s", acc.ID);
+    printUI(text, UIMiddle, UILeft);
+    sprintf(text, "Account Number: %s", acc.accountNumber);
+    printUI(text, UIMiddle, UILeft);
+    sprintf(text, "Account Type: %s", acc.type);
+    printUI(text, UIMiddle, UILeft);
+    sprintf(text, "PIN: %s", acc.pin);
+    printRetry(text);
+
+    sprintf(logs, "Created account: %s", acc.accountNumber);
+    logTransaction(logs);
+    
     char accNumInput[13];
     int verified = 0;
     while (!verified) {
@@ -548,9 +567,6 @@ void createAccount() {
     }
 
     printLoad("Going back to Main Menu...", 2);
-    char logs[50];
-    sprintf(logs, "Created account: %s", acc.accountNumber);
-    logTransaction(logs);
 }
 
 
@@ -733,7 +749,7 @@ int updateBalance(char operation, float amount, const char* accountNumber, const
         // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
-            printEnd("Deposit successful.");
+            printEnd("Deposit successful!");
         } else{
             printRetry("Please input between RM 0 and RM 50,000 only");
             fclose(accFile);
@@ -814,10 +830,10 @@ void deposit() {
         float newBalance = getAccountBalance(accountNumber);
         if (newBalance >= 0) {
             char text[60];
-            sprintf(text, "Current Balance: RM%.2f", newBalance);
+            sprintf(text, "Current Balance: RM %.2f", newBalance);
             printUI(text, UIMiddle, UILeft);
             char logs[50];
-            sprintf(logs, "Deposited into account: %s", accountNumber);
+            sprintf(logs, "Deposited RM %.2f into account: %s", amount, accountNumber);
             logTransaction(logs);
         }
     }
@@ -856,10 +872,10 @@ void withdraw() {
         float newBalance = getAccountBalance(accountNumber);
         if (newBalance >= 0) {
             char text[60];
-            sprintf(text, "Current Balance: RM%.2f", newBalance);
+            sprintf(text, "Current Balance: RM %.2f", newBalance);
             printUI(text, UIMiddle, UILeft);
             char logs[50];
-            sprintf(logs, "Withdrew from account: %s", accountNumber);
+            sprintf(logs, "Withdrew RM %.2f from account: %s", amount, accountNumber);
             logTransaction(logs);
         }
     }
@@ -969,7 +985,7 @@ int main() {
         
         printBorder();
         
-        printUI("Please choose the following (1-6): ", UIMiddle, UILeft);  
+        printUI("Please choose an option (1-6): ", UIMiddle, UILeft);  
         printUI("1. Create Account", UIMiddle, UILeft);  
         printUI("2. Delete Account", UIMiddle, UILeft);  
         printUI("3. Deposit", UIMiddle, UILeft);  

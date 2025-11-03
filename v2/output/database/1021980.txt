@@ -1,0 +1,6 @@
+Name: frea
+ID: 0987654321
+Account Number: 1021980
+Account Type: Savings
+PIN: 1234
+Balance: 0.00

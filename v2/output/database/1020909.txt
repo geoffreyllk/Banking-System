@@ -1,0 +1,6 @@
+Name: sammy lee
+ID: 123456789
+Account Number: 1020909
+Account Type: Current
+PIN: 4321
+Balance: 0.00

@@ -70,6 +70,10 @@ void toLowerString(char* string) {
     }
 }
 
+void printLine() {
+    printf("---------------------------------\n");
+}
+
 int countAccounts() {
     FILE *indexFile = fopen("database/index.txt", "r");
     if (!indexFile) return 0;
@@ -237,6 +241,7 @@ void saveAccountNumber(const char* accountNumber) {
 
 void createAccount() {
     printf("\n=== Create New Account ===\n");
+    printLine();
     if (getInput("Full name: ", acc.name, sizeof(acc.name))) {
         return;
     }
@@ -362,26 +367,35 @@ void createAccount() {
 
     fclose(accFile);
 
+    char logs[50];
+    sprintf(logs, "Created account: %s", acc.accountNumber);
+    logTransaction(logs);
+
+    printLine();
     printf("Account created successfully!\n");
-    printf("Your account number is: %s", acc.accountNumber);
+    printf("Name: %s\n", acc.name);
+    printf("ID: %s\n", acc.ID);
+    printf("Account Number: %s\n", acc.accountNumber);
+    printf("Account Type: %s\n", acc.type);
+    printf("PIN: %s\n", acc.pin);
+    printLine();
 
     char accNumInput[13];
     int verified = 0;
     while (!verified) {
-        if (getInput("\nTo return to Main Menu, re-enter your account number: ", accNumInput, sizeof(accNumInput))) {
+        if (getInput("To return to Main Menu, re-enter your account number: ", accNumInput, sizeof(accNumInput))) {
+            printLine();
             return; // if user presses 'q' force exit
         }
 
         // compare input and stored account numbers as string
         if (strcmp(accNumInput, acc.accountNumber) == 0) {
             verified = 1;
+            printLine();
         } else {
             printf("Account number is incorrect. Please try again.\n");
         }
     }
-    char logs[50];
-    sprintf(logs, "Created account: %s", acc.accountNumber);
-    logTransaction(logs);
 }
 
 
@@ -397,17 +411,19 @@ void getAccounts() {
     printf("[  Saved Accounts List  ]\n");
     char line[128];
     while (fgets(line, sizeof(line), indexFile) != NULL) {
-        line[strcspn(line, "\n")] = 0;
-        printf("%s\n", line);
+        line[strcspn(line, "\n")] = 0; // replace newline '\n' with '\0'
+        printf("- %s -\n", line);
     }
     fclose(indexFile);
 
     // get number of accounts loaded
     printf("No. of Accounts Loaded: %d\n", countAccounts());
+    printLine();
 }
 
 void deleteAccount() {
     printf("\n=== Delete Account ===\n");
+    printLine();
     // print all account numbers in database
     getAccounts();
 
@@ -475,6 +491,7 @@ void deleteAccount() {
                     return;
                 }
                 
+                printLine();
                 printf("Account deleted successfully\n");
                 char logs[50];
                 sprintf(logs, "Deleted account: %s", accountNumber);
@@ -538,6 +555,7 @@ int updateBalance(char operation, float amount, const char* accountNumber, const
         // validate deposit amount between 0 and 50000
         if (amount > 0 && amount <= 50000) {
             acc.balance += amount;
+            printLine();
             printf("Deposit successful.\n");
         } else{
             printf("Please input between RM 0 and RM 50,000 only\n");
@@ -570,6 +588,7 @@ int updateBalance(char operation, float amount, const char* accountNumber, const
         if (fee > 0) {
             printf("A remittance fee of %.2f%% has been applied.\n", fee * 100);
         }
+        printLine();
         printf("Withdrawal/Transfer successful.\n");
     }
 
@@ -597,6 +616,7 @@ int updateBalance(char operation, float amount, const char* accountNumber, const
 // --- 3,4,5. Deposit, Withdraw, Remittance (using updateBalance) ---
 void deposit() {
     printf("\n=== Deposit Amount ===\n");
+    printLine();
     getAccounts();
 
     char accountNumber[13];
@@ -614,7 +634,7 @@ void deposit() {
         if (newBalance >= 0) {
             printf("Current Balance: RM%.2f\n", newBalance);
             char logs[50];
-            sprintf(logs, "Deposited into account: %s", accountNumber);
+            sprintf(logs, "Deposited RM %.2f into account: %s", amount, accountNumber);
             logTransaction(logs);
         }
     }
@@ -622,6 +642,7 @@ void deposit() {
 
 void withdraw() {
     printf("\n=== Withdraw Amount ===\n");
+    printLine();
     getAccounts();
 
     char accountNumber[13];
@@ -643,7 +664,7 @@ void withdraw() {
         if (newBalance >= 0) {
             printf("Current Balance: RM%.2f", newBalance);
             char logs[50];
-            sprintf(logs, "Withdrew from account: %s", accountNumber);
+            sprintf(logs, "Withdrew RM %.2f from account: %s", amount, accountNumber);
             logTransaction(logs);
         }
     }
@@ -651,6 +672,7 @@ void withdraw() {
 
 void remittance() {
     printf("\n=== Transfer Amount ===\n");
+    printLine();
     getAccounts();
 
     char senderAccount[13];
@@ -700,6 +722,7 @@ void remittance() {
     if (updateBalance('-', amount, senderAccount, receiverType)) {
         // only update receiver account if sender account was successful updated
         if (updateBalance('+', amount, receiverInput, NULL)) {
+            printLine();
             printf("Transfer completed successfully!\n");
             char logs[50];
             sprintf(logs, "Transfer from account: %s to %s", senderAccount, receiverInput);
@@ -724,7 +747,8 @@ int main() {
     int running = 1;
     while (running) {
         printf("\n=== Main Menu ===\n");
-        printf("Please choose the following (1-6):\n");
+        printLine();
+        printf("Please choose an option (1-6):\n");
         printf("1. Create Account\n");
         printf("2. Delete Account\n");
         printf("3. Deposit\n");
@@ -732,6 +756,7 @@ int main() {
         printf("5. Remittance\n");
         printf("6. Exit\n");
         printf("Tip: Press 'q' to exit and return to main menu.\n");
+        printLine();
 
         if (getInput("Select Option: ", choice, sizeof(choice))) {
             continue;
@@ -739,6 +764,7 @@ int main() {
 
         // convert choice to lowercase
         toLowerString(choice);
+        printLine();
 
         if (strcmp(choice, "1") == 0 || strcmp(choice, "create") == 0) {
             createAccount();

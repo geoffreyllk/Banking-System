@@ -1,0 +1,6 @@
+Name: harry
+ID: 12934857
+Account Number: 1025621
+Account Type: Current
+PIN: 1234
+Balance: 0.00

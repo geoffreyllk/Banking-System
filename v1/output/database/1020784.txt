@@ -1,0 +1,6 @@
+Name: miranda
+ID: 12039485
+Account Number: 1020784
+Account Type: Current
+PIN: 4444
+Balance: 0.00

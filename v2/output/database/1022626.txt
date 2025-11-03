@@ -1,0 +1,6 @@
+Name: xo
+ID: 67890987654
+Account Number: 1022626
+Account Type: Current
+PIN: 7878
+Balance: 11000.50
